@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Naseem Saleh - Data Viz Scrolly on WebAIM Accessibility</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Georgia&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── Reset & tokens ─────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-text-primary:#1c1a35;
+  --color-text-secondary:#3d3a5e;
+  --color-text-tertiary:#6b6890;
+  --color-background-primary:#F8F7FD;
+  --color-background-secondary:#EDECF9;
+  --color-border-primary:#a09bbf;
+  --color-border-secondary:#c4bfdc;
+  --color-border-tertiary:#dedaef;
+  --color-border-button:#8a8690;
+  --border-radius-md:6px;
+  --accent:#5c3db8;
+  --accent-green:#0d7a5f;
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+
+/* ── Page layout ────────────────────────────────────── */
+html,body{
+  background:var(--color-background-primary);
+  color:var(--color-text-primary);
+  font-family:'Inter',system-ui,sans-serif;
+  line-height:1.6;
+  scroll-behavior:smooth;
+}
+
+/* ── Monitor frame wrapper ──────────────────────────── */
+/* Each viz section is framed like a device screen */
+.device-frame{
+  background:#fdfcff;
+  border-radius:16px;
+  box-shadow:0 2px 12px rgba(60,50,120,.08), 0 0 0 1px rgba(80,70,160,.07);
+  overflow:hidden;
+  position:relative;
+}
+.device-frame::before{
+  /* subtle top bar like a browser chrome */
+  content:'';
+  display:block;
+  height:8px;
+  background:linear-gradient(180deg,#e0dcf4 0%,#d4cfee 100%);
+  border-bottom:1px solid #c0bbdb;
+}
+
+/* ── Scrollytelling layout ──────────────────────────── */
+#scroll-container{
+  max-width:900px;
+  margin:0 auto;
+  padding:0 1.5rem;
+}
+
+/* ── Transition slides ──────────────────────────────── */
+.transition-slide{
+  min-height:60vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:5rem 0 3rem;
+  opacity:0;
+  transform:translateY(24px);
+  transition:opacity .6s ease, transform .6s ease;
+}
+.transition-slide.in-view{
+  opacity:1;
+  transform:translateY(0);
+}
+.transition-icon{
+  font-size:48px;
+  color:var(--color-text-tertiary);
+  margin-bottom:1.25rem;
+  display:block;
+}
+.transition-text{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(22px,4vw,32px);
+  font-weight:400;
+  line-height:1.35;
+  color:var(--color-text-primary);
+  max-width:560px;
+}
+.transition-text em{
+  font-style:normal;
+  color:var(--accent);
+}
+.transition-sub{
+  font-size:16px; /*NOTE: Changed from 14 to 16 */
+  color:var(--color-text-secondary);
+  margin-top:1rem;
+  max-width:480px;
+  line-height:1.7;
+}
+.transition-sub a{color:var(--accent);text-decoration:none}
+.transition-sub a:hover{text-decoration:underline}
+
+/* ── Viz sections ───────────────────────────────────── */
+.viz-section{
+  padding:2rem 0 3rem;
+  opacity:0;
+  transform:translateY(20px);
+  transition:opacity .5s ease, transform .5s ease;
+}
+.viz-section.in-view{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ── Source footer ──────────────────────────────────── */
+.source-line{
+  font-size:13px;
+  color:var(--color-text-secondary);
+  text-align:center;
+  padding:3rem 0 2rem;
+  border-top:1px solid var(--color-border-tertiary);
+  margin-top:2rem;
+}
+.source-line a{color:var(--color-text-secondary)}
+
+
+/* ── Cracked bar effect (panel 4 ARIA bar) ──────────── */
+/* The SVG crack overlay is injected via JS; these styles position it */
+.bar-crack-overlay{
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  pointer-events:none;
+  border-radius:4px;
+  overflow:hidden;
+}
+.bar-crack-overlay svg{
+  width:100%;height:100%;
+  display:block;
+}
+
+/* ── Conclusion transition ───────────────────────────── */
+#tr4 .transition-text{
+  font-size: clamp(26px, 4.5vw, 42px);
+  max-width: 680px;
+}
+#tr4 .transition-sub{
+  font-size: 16px;
+  max-width: 580px;
+}
+#tr4{
+  min-height: 80vh;
+}
+
+/* ── Scroll to top button ───────────────────────────── */
+#scrollTopBtn {
+  display: block;
+  margin: 2rem auto;
+  padding: 10px 24px;
+  border-radius: 20px;
+  border: 2px solid var(--color-border-button);
+  background: #fdfcff;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+#scrollTopBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Opening hero ───────────────────────────────────── */
+#hero{
+  min-height:80vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:6rem 0 4rem;
+/* --- NOTE: ADDed to prevent fade in and fade out when loaded : */
+/* Ensure the hero starts in the "ready to fade" state */
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+/* This is the class the observer will add when the page loads */
+#hero.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hero-eyebrow{
+  font-size:13px; /* up from 11px */
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--color-text-secondary); /* up from tertiary */
+  margin-bottom:1.25rem;
+}
+.hero-hed{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:clamp(28px,5vw,48px);
+  font-weight:400;
+  line-height:1.2;
+  color:var(--color-text-primary);
+  margin-bottom:1.25rem;
+  max-width:720px; /* up from 580px */
+}
+.hero-hed span{color:var(--accent)}
+.hero-dek{
+  font-size:16px;
+  color:var(--color-text-secondary);
+  max-width:620px; /* up from 500px */
+  line-height:1.75;
+  margin-bottom:2rem;
+}
+.hero-scroll-hint{
+  font-size:13px;
+  color:var(--color-text-secondary);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  animation:bounce 2s infinite;
+}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+/* ── Panel-specific scoping ─────────────────────────── */
+.s-panel1 .panel,.s-panel2 .panel,.s-panel3 .panel,.s-panel4 .panel{
+  max-width:100%;
+  padding:1.5rem 1.25rem 1.75rem;
+}
+
+/* ── Panel styles injected ──────────────────────────── */
+/* PANEL 1 */
+
+*{box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.s-panel1 .panel{max-width:860px;margin:0 auto;padding:1.5rem 1.5rem 2rem}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);margin:0 0 8px}
+.headline{font-size:22px;font-weight:500;line-height:1.3;margin:0 0 6px;color:var(--color-text-primary)}
+.subhead{font-size:15px;color:var(--color-text-secondary);margin:0 0 1rem;line-height:1.6}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem;max-height:0;overflow:hidden;opacity:0;transition:opacity .4s,max-height .4s}
+.stats-row.visible{max-height:120px;opacity:1}
+.stat{background:#fdfcff;border-radius:var(--border-radius-md);padding:10px 12px;border:1px solid var(--color-border-secondary)}
+.stat-val{font-size:18px;font-weight:500;color:var(--color-text-primary);margin:0 0 2px}
+.stat-lbl{font-size:13px;color:var(--color-text-secondary);line-height:1.4}
+.hint{font-size:14px;color:var(--color-text-secondary);margin:0 0 10px;display:flex;align-items:center;gap:5px}
+.grid-outer{display:flex;justify-content:center;margin-bottom:10px}
+.grid-wrap{position:relative;display:inline-block}#dotGrid{display:grid;grid-template-columns:repeat(10,32px);grid-template-rows:repeat(10,32px);gap:5px}
+.dot{width:32px;height:32px;border-radius:5px;background:#c4bfdc;display:flex;align-items:center;justify-content:center;transition:background .4s,opacity .25s;cursor:pointer;flex-shrink:0;overflow:hidden;position:relative}
+.dot svg{opacity:0;transition:opacity .2s;pointer-events:none;position:absolute}
+.dot.shown svg{opacity:1}
+.dot.passing{background:#4E8766} /* NOTE: Changed */
+.dot.dim{opacity:.13}
+
+
+/* ── Diagonal Triangle Logic ── */
+/* Update your CSS section with this */
+.dot-half-l, .dot-half-r {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1; /* Stay below icons */
+}
+
+.dot-half-l { clip-path: polygon(0 0, 100% 0, 0 100%); }
+.dot-half-r { clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+/* Diagonal Icons */
+/* Position icons in the "fat" part of the triangles (Split icons) */
+.dot svg.icon-l {
+  top: 3px !important;
+  left: 3px !important;
+  width: 11px !important;
+  height: 11px !important;
+  z-index: 3;
+}
+
+.dot svg.icon-r {
+  bottom: 3px !important;
+  right: 3px !important;
+  left: auto !important; 
+  width: 11px !important;
+  height: 11px !important;
+  z-index: 3;
+}
+
+/* BIGGER SINGLE ICONS: 
+   Target SVGs that are NOT part of a split (icon-l/icon-r) */
+.dot svg:not(.icon-l):not(.icon-r) {
+  width: 15px !important;
+  height: 15px !important;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Keeps them perfectly centered */
+  z-index: 3;
+}
+
+/* Keep these active so the screen-reader demo works */
+.dot-label {
+  position: absolute;
+  font-size: 4.5px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.1;
+  pointer-events: none;
+  padding: 1px 2px;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity .3s;
+  z-index: 4;
+  width: 100%;
+}
+.dot.show-label .dot-label { opacity: 1; }
+.dot.show-label svg { opacity: 0 !important; }
+
+/* NOTE: OLD VERSION for both dot BELOW */ 
+/*.dot-half-l,.dot-half-r{position:absolute;top:0;height:100%;width:50%;transition:background .35s;pointer-events:none}
+.dot-half-l{left:0}
+.dot-half-r{right:0}
+.dot-half-l::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:rgba(255,255,255,0.4)}
+.dot svg.icon-l{left:1px;width:10px;height:10px}
+.dot svg.icon-r{right:1px;width:10px;height:10px}
+.dot-label{position:absolute;font-size:4.5px;font-weight:700;text-align:center;line-height:1.1;pointer-events:none;padding:1px 2px;color:#fff;background:rgba(0,0,0,0.5);border-radius:2px;opacity:0;transition:opacity .3s;z-index:4;width:100%}
+.dot.show-label .dot-label{opacity:1} */
+/* .dot.show-label svg{opacity:0!important}*/
+/* NOTE: Float label made 13 instead of 12px) */
+.float-label{position:absolute;border-radius:4px;font-size:13px;font-weight:500;padding:3px 8px;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .2s;border:.5px solid var(--color-border-secondary);background:#fdfcff}
+.float-label.visible{opacity:1}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;max-height:0;overflow:hidden;opacity:0;transition:opacity .3s,max-height .3s;align-items:center;justify-content:center}
+.swatches.visible{max-height:120px;opacity:1}
+.sw-btn{width:32px;height:32px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:opacity .2s,border-color .2s;padding:0;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.sw-btn:hover{opacity:.8}
+.sw-btn.dim-sw{opacity:.2}
+.sw-btn.active-sw{border-color:var(--color-text-primary)}
+.sw-btn svg{width:16px;height:16px;pointer-events:none;flex-shrink:0}
+.sw-label{font-size:13px;color:var(--color-text-secondary)}
+.sw-item{display:flex;align-items:center;gap:5px;cursor:pointer}
+.detail-panel{border-top:.5px solid var(--color-border-tertiary);padding-top:14px;max-height:0;overflow:hidden;opacity:0;transition:opacity .25s,max-height .4s}
+.detail-panel.visible{max-height:400px;opacity:1}
+.detail-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.d-swatch{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.d-swatch svg{width:18px;height:18px}
+.d-name{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.d-pct{font-size:13px;color:var(--color-text-secondary);margin-top:2px}
+.d-desc{font-size:14px;color:var(--color-text-secondary);line-height:1.65;margin:0 0 10px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.toggle-btn{font-size:13px;padding:5px 14px;border-radius:20px;border:2px solid var(--color-border-button);background:#fdfcff;color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.toggle-btn:hover{border-color:var(--color-border-primary,#888)}
+.toggle-btn.on{color:var(--accent);border-color:var(--accent);background:#fdfcff}
+.demo-box{margin-top:10px;background:#fdfcff;border-radius:var(--border-radius-md,6px);padding:12px 14px;font-size:13px;line-height:1.6;color:var(--color-text-secondary,#555);display:none;border:1px solid var(--color-border-secondary)}
+.demo-box.visible{display:block}
+.reset-hint{font-size:13px;color:var(--color-text-secondary);margin:10px 0 0}
+
+/* PANEL 2 */
+
+*{box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.s-panel2 .panel{max-width:860px;margin:0 auto;padding:1.5rem 1.5rem 2rem}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);margin:0 0 8px}
+.headline{font-size:20px;font-weight:500;line-height:1.3;margin:0 0 6px;color:var(--color-text-primary)}
+.subhead{font-size:15px;color:var(--color-text-secondary);margin:0 0 1.25rem;line-height:1.6}
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem}
+.f-btn{font-size:13px;padding:5px 11px;border-radius:20px;border:2px solid var(--color-border-button);background:#fdfcff;color:var(--color-text-secondary);cursor:pointer;transition:background .15s,color .15s,border-color .15s;display:flex;align-items:center;gap:6px}
+.f-btn:hover{border-color:var(--color-text-secondary)}
+.chart-wrap{position:relative;width:100%;height:360px;margin-bottom:6px}
+.hint{font-size:13px;color:var(--color-text-secondary);margin:0 0 4px}
+.reset-btn{font-size:13px;color:var(--color-text-secondary);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;display:none;margin-bottom:1rem}
+.detail-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:.75rem;opacity:0;transition:opacity .25s;max-height:0;overflow:hidden}
+.detail-row.visible{opacity:1;max-height:300px}
+.d-card{background:#fdfcff;padding:10px 12px;border-left:3px solid #ccc;border-radius:0;border:1px solid var(--color-border-secondary);border-left-width:3px}
+.d-card-label{font-size:12px;color:var(--color-text-secondary);margin:0 0 4px;text-transform:uppercase;letter-spacing:.05em}
+.d-card-val{font-size:17px;font-weight:500;color:var(--color-text-primary);margin:0 0 3px}
+.d-card-trend{font-size:13px;font-weight:500;margin:0 0 4px}
+.d-card-what{font-size:13px;color:var(--color-text-secondary);margin:0 0 3px;line-height:1.5}
+.d-card-note{font-size:13px;color:var(--color-text-secondary);margin:0} /*NOTE: Changed from 12px to 13px*/
+.empty-card{background:#fdfcff;padding:10px 12px;display:flex;align-items:center;justify-content:center;min-height:80px;border:1px solid var(--color-border-secondary)}
+.empty-card p{font-size:13px;color:var(--color-text-secondary);margin:0;text-align:center}
+
+/* PANEL 3 */
+
+*{box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.s-panel3 .panel{max-width:860px;margin:0 auto;padding:1.5rem 1.5rem 2rem}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary);margin:0 0 8px}
+.headline{font-size:22px;font-weight:500;line-height:1.3;margin:0 0 6px;color:var(--color-text-primary)}
+.subhead{font-size:15px;color:var(--color-text-secondary);margin:0 0 1rem;line-height:1.6}
+.controls{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.ctrl-btn{font-size:13px;padding:5px 12px;border-radius:20px;border:2px solid var(--color-border-button);background:#fdfcff;color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.ctrl-btn:hover{border-color:var(--color-text-secondary)}
+/* sidebar layout: chart left, detail card right */
+.panel3-body{display:grid;grid-template-columns:1fr 220px;gap:16px;align-items:start}
+.chart-area{position:relative;margin-bottom:1rem}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;cursor:pointer;border-radius:4px;padding:2px 4px;transition:opacity .2s}
+.bar-row:hover{opacity:1!important}
+.bar-row.active{opacity:1!important}
+.bar-row.dim{opacity:.2}
+.bar-icon{width:20px;text-align:center;flex-shrink:0;font-size:14px;color:var(--color-text-secondary)}
+.bar-row.active .bar-icon{color:var(--color-text-primary)}
+/* Idea B: left border + white bg on active bar label to suggest a selected tab */
+.bar-label{width:120px;font-size:13px;color:var(--color-text-secondary);flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:4px;border-right:2.5px solid transparent;transition:border-color .15s,background .15s,color .15s}
+.bar-row.active .bar-label{color:var(--color-text-primary);font-weight:500;border-right-color:var(--color-text-primary)}
+.bar-track{flex:1;height:22px;background:var(--color-background-secondary);border-radius:2px;position:relative;overflow:visible}
+.bar-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.bar-val{font-size:13px;color:var(--color-text-secondary);width:32px;text-align:right;flex-shrink:0}
+.bar-row.active .bar-val{color:var(--color-text-primary);font-weight:500}
+.baseline-line{position:absolute;top:-3px;bottom:-3px;width:2px;pointer-events:none;z-index:2}
+/* sidebar detail card */
+.detail-card{padding:14px 16px;border-left:3px solid #ccc;opacity:0;transition:opacity .2s;background:#fdfcff;border:1px solid var(--color-border-secondary);border-left-width:3px;border-radius:0 4px 4px 0;position:sticky;top:20px}
+.detail-card.visible{opacity:1}
+.dc-name{font-size:14px;font-weight:500;color:var(--color-text-primary);margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.dc-val{font-size:24px;font-weight:500;margin:0 0 4px}
+.dc-sub{font-size:13px;color:var(--color-text-secondary);margin:0 0 4px}
+.baseline-tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:20px;font-weight:500}
+.reset-btn{font-size:13px;color:var(--color-text-secondary);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;display:none;margin-bottom:.5rem}
+/* placeholder when nothing selected */
+.detail-placeholder{font-size:13px;color:var(--color-text-secondary);line-height:1.6;padding:8px 0}
+
+/* PANEL 4 */
+
+*{box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.s-panel4 .panel{max-width:860px;margin:0 auto;padding:1.5rem 1.5rem 2rem}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary,#3d3a5e);margin:0 0 8px;font-family:system-ui,sans-serif}
+.headline{font-size:20px;font-weight:500;line-height:1.3;margin:0 0 6px;color:var(--color-text-primary,#1a1a18)}
+.subhead{font-size:15px;color:var(--color-text-secondary,#555);margin:0 0 1.5rem;line-height:1.6;font-family:system-ui,sans-serif}
+
+/* ── Toggle switch ── */
+.aria-toggle-wrap{display:flex;align-items:center;gap:0;margin-bottom:1.5rem;border:2px solid var(--color-border-button);border-radius:24px;overflow:hidden;width:fit-content;font-family:system-ui,sans-serif}
+.aria-toggle-btn{font-size:13px;padding:7px 18px;border:none;background:#fdfcff;color:var(--color-text-secondary);cursor:pointer;transition:background .2s,color .2s;white-space:nowrap;font-weight:400}
+.aria-toggle-btn.active{background:var(--color-background-secondary);color:var(--accent);font-weight:600}
+
+/* ── ARIA comparison bars ── */
+.aria-compare{margin-bottom:2rem}
+.compare-label{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary,#3d3a5e);margin:0 0 1rem;font-family:system-ui,sans-serif}
+.bar-group{display:flex;flex-direction:column;gap:14px}
+.bar-item{display:flex;align-items:center;gap:10px;font-family:system-ui,sans-serif}
+.bar-item-label{font-size:13px;color:var(--color-text-secondary,#555);width:130px;flex-shrink:0;text-align:right}
+.bar-item-label.active-label{color:var(--color-text-primary,#1a1a18);font-weight:500}
+.bar-track{flex:1;height:28px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;transition:width .55s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;position:relative;overflow:hidden}
+.bar-fill-val{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;position:relative;z-index:2} /*NOTE: Changed from 12 to 14*/
+.bar-item-delta{font-size:13px;font-family:system-ui,sans-serif;width:80px;flex-shrink:0}
+
+/* ── Callout stat ── */
+.callout{background:#fdfcff;border-radius:6px;padding:14px 16px;margin-bottom:2rem;font-family:system-ui,sans-serif;border:1px solid var(--color-border-secondary)}
+.callout-val{font-size:28px;font-weight:500;color:#BD580A;margin:0 0 4px} /*NOTE: Darkened slightly from #C05A0A since only met AA standard for large text */
+.callout-lbl{font-size:14px;color:var(--color-text-secondary,#555);line-height:1.5;margin:0}
+
+/* ── Section divider ── */
+.section-divider{border:none;border-top:1px solid var(--color-border-tertiary,#ddd);margin:0 0 1.5rem}
+.section-label{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary,#3d3a5e);margin:0 0 6px;font-family:system-ui,sans-serif}
+.section-headline{font-size:16px;font-weight:500;color:var(--color-text-primary,#1a1a18);margin:0 0 6px;line-height:1.35}
+.section-sub{font-size:14px;color:var(--color-text-secondary,#555);margin:0 0 1.25rem;line-height:1.6;font-family:system-ui,sans-serif}
+
+/* ── Heading chaos cards ── */
+.chaos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.chaos-card{background:#fdfcff;border-radius:6px;padding:12px 14px;cursor:pointer;border:2px solid var(--color-border-button);transition:border-color .15s,background .15s}
+.chaos-card:hover{border-color:var(--accent)}
+.chaos-card.active{border-color:var(--accent);background:var(--color-background-secondary)}
+.chaos-val{font-size:22px;font-weight:500;margin:0 0 4px;color:var(--color-text-primary,#1a1a18)}
+.chaos-lbl{font-size:13px;color:var(--color-text-secondary);line-height:1.4;font-family:system-ui,sans-serif}
+.chaos-card.active .chaos-lbl{color:var(--color-text-primary)}
+
+/* NOTE: Side by side layout for cards heading visual thing -- */
+/* .chaos-card-content { */
+/*  display: flex;*/
+ /* align-items: center; /* Centers icon and text vertically */
+ /* gap: 12px;           /* Space between icon and numbers */
+/*}*/
+/*.card-icon-viz {*/
+/*  display: flex;*/
+/*  flex-direction: column;*/
+/*  justify-content: center;*/
+/*  width: 25px;         /* Keeps icons aligned in a neat column */
+/*  flex-shrink: 0;*/
+/*} */
+
+.chaos-card-content {
+  display: flex;
+  justify-content: space-between; /* This pushes the icon to the far right */
+  align-items: center; 
+  width: 100%;
+  height: 100%;
+}
+
+.card-text {
+  flex: 1; /* Lets the text take up the available space */
+}
+
+.card-icon-viz {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Aligns the bars to the right edge */
+  opacity: 0.8;          /* Makes them look a bit more like background art */
+  padding-left: 10px;
+}
+
+/* Panel 4's ── Heading demo ── */
+.heading-demo{background:#fdfcff;border-radius:6px;padding:14px 16px;margin-bottom:1rem;opacity:0;max-height:0;overflow:hidden;transition:opacity .25s,max-height .35s;border:1px solid var(--color-border-secondary)}
+.heading-demo.visible{opacity:1;max-height:300px}
+.heading-demo-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-secondary,#3d3a5e);margin:0 0 10px;font-family:system-ui,sans-serif}
+/* NOTE: Changed align hd row from baseline to center */
+.hd-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-family:system-ui,sans-serif}
+.hd-tag{font-size:1wpx;font-weight:700;letter-spacing:.04em;padding:1px 5px;border-radius:3px;flex-shrink:0;font-family:monospace}
+.hd-tag.ok{background:#E6F1FB;color:#0C447C} /*NOTE: Changed. Was green before : #155724 on #d4edda */
+.hd-tag.bad{background:#FFF3E0;color:#854F0B} /*NOTE: Changed. Was red before : #721c24 on #f8d7da */
+.hd-text{font-size:13px;color:var(--color-text-secondary,#555);line-height:1.4}
+.hd-note{font-size:13px;color:var(--color-text-secondary);font-style:italic;margin-left:4px} /*NOTE: Changed from 12px to 13px*/
+
+.demo-explain{font-size:13px;color:var(--color-text-secondary,#555);line-height:1.6;margin:0;font-family:system-ui,sans-serif}
+
+/* ── Closing note ── */
+.closing{font-size:14px;color:var(--color-text-secondary,#555);line-height:1.7;margin:1rem 0 0;font-family:system-ui,sans-serif;border-left:3px solid var(--accent);padding-left:12px}
+/* NOTE: Deleted closing note at the end of panel 4, so ont being used anymore .. ? */
+
+/* Replaces the simple ::before bar with a full chrome strip */
+/* TO REMOVE browser chrome: delete this entire block AND the .browser-chrome divs in the HTML */
+.device-frame::before{display:none} /* hide the old simple bar */
+
+.browser-chrome{
+  background:linear-gradient(180deg,#e6e3f6 0%,#d9d5ef 100%);
+  border-bottom:1px solid #c0bbdb;
+  padding:0;
+  user-select:none;
+}
+/* Window buttons row */
+.chrome-buttons{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 12px 6px;
+}
+/* TO REMOVE window buttons: delete .chrome-buttons and its children in HTML */
+.chrome-btn{
+  width:12px;height:12px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:rgba(0,0,0,0.4);font-weight:700;line-height:1;
+  cursor:default;flex-shrink:0;
+}
+.chrome-btn-close{background:#ff5f57;border:1px solid #e0443e}
+.chrome-btn-min{background:#febc2e;border:1px solid #d9a020}
+.chrome-btn-max{background:#28c840;border:1px solid #1aab29}
+.chrome-btn-close::after{content:'×'}
+.chrome-btn-min::after{content:'−'}
+.chrome-btn-max::after{content:'+'}
+
+/* Tab row */
+.chrome-tabs{
+  display:flex;
+  align-items:flex-end;
+  padding:0 8px;
+  gap:2px;
+}
+.chrome-tab{
+  padding:5px 14px 0;
+  font-size:11px;
+  color:var(--color-text-tertiary);
+  background:transparent;
+  border-radius:6px 6px 0 0;
+  border:1px solid transparent;
+  border-bottom:none;
+  white-space:nowrap;
+  overflow:hidden;
+  max-width:160px;
+  text-overflow:ellipsis;
+  min-width:40px;
+  height:28px;
+  display:flex;
+  align-items:center;
+}
+.chrome-tab.active{
+  background:#fdfcff;
+  border-color:#c0bbdb;
+  border-bottom-color:#fdfcff; /* merges into panel */
+  color:var(--color-text-primary);
+  font-weight:500;
+  box-shadow:0 -1px 4px rgba(80,70,160,.06);
+  position:relative;
+  z-index:2;
+  margin-bottom:-1px; /* overlap the chrome border-bottom */
+}
+.chrome-tab-stub{
+  width:36px;
+  background:rgba(0,0,0,.04);
+  border-radius:6px 6px 0 0;
+  border:1px solid rgba(0,0,0,.06);
+  border-bottom:none;
+  height:24px;
+  flex-shrink:0;
+}
+
+/* ── Cracked bar effect (panel 4 ARIA bar) ──────────── */
+/* The SVG crack overlay is injected via JS; these styles position it */
+.bar-crack-overlay{
+  position:absolute;
+  top:0;left:0;right:0;bottom:0;
+  pointer-events:none;
+  border-radius:4px;
+  overflow:hidden;
+}
+.bar-crack-overlay svg{
+  width:100%;height:100%;
+  display:block;
+}
+
+
+
+</style>
+</head>
+<body>
+
+<div id="scroll-container">
+
+  <!-- ── Hero ──────────────────────────────────────────── -->
+  <section id="hero">
+    <p class="hero-eyebrow">Naseem Saleh · INST462 Project 3: WebAIM Million Interactive Data Narrative · Spring 2026</p>
+    <h1 class="hero-hed">Accessibility should be the standard...<br><span>But 94.8% of websites fail to meet it.</span></h1>
+    <p class="hero-dek">In 2025, the top million homepages were automatically scanned for basic accessibility errors. The web still has far to go before everyone can use it equally...</p>
+    <div class="hero-scroll-hint">
+      <i class="ti ti-arrow-down" aria-hidden="true"></i>
+      Scroll to explore
+    </div>
+  </section>
+
+  <!-- ── Viz 1: The scale ──────────────────────────────── -->
+  <div class="viz-section s-panel1" id="viz1">
+    <div class="device-frame">
+      <!-- ── Browser chrome ── EDIT TAB TITLE: change the text inside .chrome-tab.active below -->
+      <!-- TO REMOVE entire chrome: delete the .browser-chrome div below -->
+      <div class="browser-chrome">
+        <!-- TO REMOVE window buttons: delete this .chrome-buttons div -->
+        <div class="chrome-buttons">
+          <div class="chrome-btn chrome-btn-close" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-min" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-max" aria-hidden="true"></div>
+        </div>
+        <div class="chrome-tabs">
+          <div class="chrome-tab active" id="tab1">The Scale</div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+        </div>
+      </div>
+      <h2 class="sr-only">95 out of 100 websites fail accessibility. Click to explore the top two failure types.</h2>
+
+<div class="panel">
+  <p class="kicker">Web accessibility · 2025 · Top 1,000,000 homepages tested</p>
+  <h1 class="headline" id="headline">Only 5.2% of websites did not have any errors at all.</h1>
+  <p class="subhead" id="subhead">The top two errors tell us exactly how unequal access really is.</p>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat"><div class="stat-val">1,000,000</div><div class="stat-lbl">homepages tested</div></div>
+    <!-- ── NOTE: Can change color here for text  ────────────────────────────────  Original was : reddish orange #D85A30  Changed darker to meet AAA standard for large text  --> 
+    <div class="stat"><div class="stat-val" style="color:#C94F26">948,000</div><div class="stat-lbl">had at least one failure</div></div>
+    <div class="stat"><div class="stat-val">50,960,288</div><div class="stat-lbl">total errors found</div></div>
+  </div>
+
+  <p class="hint"><i class="ti ti-hand-click" aria-hidden="true" style="font-size:13px"></i><span id="hintText">Click the grid to reveal</span></p>
+
+  <div class="grid-outer">
+    <div class="grid-wrap">
+      <div id="dotGrid" role="img" aria-label="10 by 10 grid. 95 squares are failing websites, 5 pass."></div>
+      <div class="float-label" id="floatLabel"></div>
+    </div>
+  </div>
+
+  <div class="swatches" id="swatches"></div>
+  <p class="hint" id="overlapHint" style="display:none;margin-top:-8px"><span style="font-size:14px;color:var(--color-text-secondary)">Split squares = Sites with both failures at once</span></p>
+
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <div class="d-swatch" id="dSwatch"></div>
+      <div>
+        <div class="d-name" id="dName"></div>
+        <div class="d-pct" id="dPct"></div>
+      </div>
+    </div>
+    <p class="d-desc" id="dDesc"></p>
+    <div id="toggleArea"></div>
+    <p class="reset-hint">Click another to compare · click grid background to reset</p>
+  </div>
+</div>
+
+<script> //NOTE: Changed color here for grid visualization LC is low contrast.
+(function(){
+const LC_COLOR='#B8842F', LC_DIM='#EEE7DA';  // considered soft gold ..  warm cream for dim
+const ALT_COLOR='#3E5675', ALT_DIM='#E6EAEE';  // considered muted steel blue or somthg
+const PASS_COLOR='#4E8766'; // Soft sage green — noticeably lighter and distinct!
+
+const ICONS={
+  lc:`<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="white" stroke-width="2"/><path d="M10 2a8 8 0 0 1 0 16Z" fill="white"/></svg>`,
+  alt:`<svg viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="white" stroke-width="2"/><line x1="3" y1="4" x2="17" y2="16" stroke="white" stroke-width="2"/></svg>`,
+  pass:`<svg viewBox="0 0 20 20" fill="none"><path d="M5 10l4 4 6-6" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+};
+
+// failures list — 'both' is a virtual entry for the swatch only
+const failures=[
+  {id:'lc',label:'Low Contrast',pct:79.1,avg:29.6,color:LC_COLOR,dimColor:LC_DIM,
+   desc:'This is when colors used for text or visual elements blend in with the background. That means low-vision users can not see the content properly. <strong>4 in 5 websites</strong> have this problem. On average, each affected page has it nearly <strong>30 times</strong>.',
+   toggle:{label:'See what low contrast looks like',offLabel:'Restore contrast',type:'contrast',
+     demoText:'The selected grid squares are now faded — similar to how low-contrast elements appear when the foreground and background are too similar. For someone with low vision, this is what most of the web looks like.'}},
+  {id:'alt',label:'Missing Alt Text',pct:55.5,avg:11,color:ALT_COLOR,dimColor:ALT_DIM,
+   desc:'Images have no written description in the code. (This is known as alt text) Screen readers read these aloud for those who need a proper description to understand. On <strong>55% of sites</strong>, they hear nothing or simply "Image" — or just a raw filename like "IMG_4829.jpg."',
+   toggle:{label:'See what a screen reader encounters',offLabel:'Hide screen reader view',type:'alt',
+     demoText:'Without alt text, a screen reader reads a raw filename or says nothing at all. The replaced icons within the selected squares show what assistive technology "sees". Meaningless labels (such as "IMG_4829.jpg.") instead of something helpful.'}},
+  {id:'both',label:'Both Failures',pct:null,avg:null,color:null,dimColor:null,
+   desc:'These squares represent sites that fail <em>both</em> checks at once. This means users with low-vision can\'t read the text <em>and</em> screen reader users can\'t get image descriptions. <strong>Nearly half of all tested websites have both problems at the same time.</strong>',
+   toggle:null},
+  {id:'pass',label:'Passes All Checks',pct:5.2,avg:null,color:PASS_COLOR,dimColor:'#A8D4C0',
+   desc:'Only <strong>5 out of 100</strong> homepages passed all automated accessibility checks with no detectable errors. These sites have things like adequate contrast, labeled images, labeled forms, and properly described links and buttons. <strong>However</strong>, they could still have an issue that can not be detected by an automatic scanner...',
+   toggle:null}
+];
+
+// Dot counts: 52 both + 32 lc-only + 11 alt-only + 5 pass = 100
+// Grouped by type so matching dots cluster together
+const DOT_TYPES=[];
+for(let i=0;i<52;i++) DOT_TYPES.push('both');
+for(let i=0;i<32;i++) DOT_TYPES.push('lc');
+for(let i=0;i<11;i++) DOT_TYPES.push('alt');
+for(let i=0;i<5;i++)  DOT_TYPES.push('pass');
+// No shuffle — groups stay together for clarity
+
+const TOTAL=100;
+let revealed=false, activeId=null, toggleOn=false;
+const dotEls=[];
+const grid=document.getElementById('dotGrid');
+
+// Build grid DOM
+for(let i=0;i<TOTAL;i++){
+  const d=document.createElement('div');
+  d.className='dot';
+  d.dataset.type=DOT_TYPES[i];
+  const lbl=document.createElement('div');
+  lbl.className='dot-label';
+  d.appendChild(lbl);
+  grid.appendChild(d);
+  dotEls.push(d);
+}
+
+function makeSvg(iconId, extraClass=''){
+  const wrap=document.createElement('div');
+  wrap.innerHTML=ICONS[iconId];
+  const svg=wrap.querySelector('svg');
+  svg.style.position='absolute';
+  svg.style.width='11px';
+  svg.style.height='11px';
+  if(extraClass) svg.classList.add(extraClass);
+  return svg;
+}
+
+function colorDot(d, type){
+  // 1. Clear old states
+  d.querySelectorAll('.dot-half-l,.dot-half-r').forEach(el=>el.remove());
+  d.querySelectorAll('svg').forEach(el=>el.remove());
+  d.classList.remove('passing');
+
+  // 2. Handle THE SPLIT (Both)
+  if(type==='both'){
+    const hl=document.createElement('div'); hl.className='dot-half-l'; hl.style.background=LC_COLOR;
+    const hr=document.createElement('div'); hr.className='dot-half-r'; hr.style.background=ALT_COLOR; 
+    d.appendChild(hl); d.appendChild(hr);
+    d.style.background='transparent';
+    
+    // Add icons with specific diagonal classes
+    const svgL=makeSvg('lc', 'icon-l'); 
+    const svgR=makeSvg('alt', 'icon-r'); 
+    d.appendChild(svgL); 
+    d.appendChild(svgR);
+    
+    d.classList.add('shown');
+    d.dataset.fid='both';
+
+  // 3. Handle SINGLE failures (This keeps your interactivity working)
+  } else if(type==='lc'){
+    d.style.background=LC_COLOR;
+    d.appendChild(makeSvg('lc'));
+    d.classList.add('shown');
+    d.dataset.fid='lc';
+  } else if(type==='alt'){
+    d.style.background=ALT_COLOR;
+    d.appendChild(makeSvg('alt'));
+    d.classList.add('shown');
+    d.dataset.fid='alt';
+  } else if(type==='pass'){
+    d.style.background=PASS_COLOR;
+    d.appendChild(makeSvg('pass'));
+    d.classList.add('shown','passing');
+    d.dataset.fid='pass';
+  
+
+  // NOTE: OLD WAY BENEATH:
+    // lc icon left, alt icon right
+    //const svgL=makeSvg('lc'); svgL.classList.add('icon-l'); svgL.style.left='2px';
+    //const svgR=makeSvg('alt'); svgR.classList.add('icon-r'); svgR.style.right='2px';
+    //d.appendChild(svgL); d.appendChild(svgR);
+    //d.classList.add('shown');
+    //d.dataset.fid='both';
+  //} else if(type==='lc'){
+    //d.style.background=LC_COLOR;
+    //d.appendChild(makeSvg('lc'));
+   // d.classList.add('shown');
+    //d.dataset.fid='lc';
+  //} else if(type==='alt'){
+   // d.style.background=ALT_COLOR;
+    //d.appendChild(makeSvg('alt'));
+    //d.classList.add('shown');
+    //d.dataset.fid='alt';
+  //} else if(type==='pass'){
+    //d.style.background=PASS_COLOR;
+    //d.appendChild(makeSvg('pass'));
+    //d.classList.add('shown','passing');
+    //d.dataset.fid='pass';
+  }
+}
+
+function revealDots(){
+  revealed=true; // original text content : 95 out of every 100 websites have at least one thing that bars someone from fully accessing them. ... that means was supposed to say something differnt before reveal ?, but oh well. (Or maybe that's only for the hint.. , but i think did say different before reveal before. oh well ) maybe not important? my choice i guess anyway . This looks same as what said before in other place though, or at least the other lines ...
+  document.getElementById('headline').textContent='Only 5.2% of websites did not have any errors at all.';
+  document.getElementById('subhead').innerHTML='The top two errors tell us exactly how unequal access really is. <br><br>Each square represents 10,000 websites. Click the grid to find out what\'s keeping people out.'; //Changed from textcontent to be on next line
+  document.getElementById('hintText').textContent='Click any square or legend button to explore'; // originally 'Each square = 10,000 websites. Split squares have both top failures at once. Click any square or legend button to explore. hinttextContent='Click any square or legend button to explore''
+  document.getElementById('statsRow').classList.add('visible');
+  document.getElementById('overlapHint').style.display='flex';
+
+  dotEls.forEach((d,i)=>{
+    const lbl=d.querySelector('.dot-label');
+    colorDot(d, DOT_TYPES[i]);
+    if(lbl) d.appendChild(lbl); // keep label on top
+    d.addEventListener('click', e=>{
+      e.stopPropagation();
+      const fid=d.dataset.fid;
+      selectFailure(fid);
+    });
+  });
+
+  buildSwatches();
+  document.getElementById('swatches').classList.add('visible');
+}
+
+// ── Cluster bounds for float label ───────────────────────────────────
+function getClusterBounds(fids){
+  const wrapRect=grid.parentElement.getBoundingClientRect();
+  let minX=9999,maxX=0,minY=9999;
+  dotEls.forEach(d=>{
+    if(!fids.includes(d.dataset.fid)) return;
+    const r=d.getBoundingClientRect();
+    const cx=r.left+r.width/2-wrapRect.left;
+    const y=r.top-wrapRect.top;
+    if(cx<minX)minX=cx; if(cx>maxX)maxX=cx; if(y<minY)minY=y;
+  });
+  return{cx:(minX+maxX)/2,top:minY};
+}
+
+// ── Toggles ──────────────────────────────────────────────────────────
+function applyToggle(f, on){
+  toggleOn=on;
+  const targets = f.id==='lc' ? ['lc','both'] : ['alt','both'];
+  dotEls.forEach(d=>{
+    if(!targets.includes(d.dataset.fid)) return;
+    const lbl=d.querySelector('.dot-label');
+    if(f.toggle.type==='contrast'){
+      // fade lc-colored half or whole dot
+      if(d.dataset.fid==='lc'){
+        d.style.background=on?LC_DIM:LC_COLOR;
+      } else { // both — fade left half
+        const hl=d.querySelector('.dot-half-l');
+        if(hl) hl.style.background=on?LC_DIM:LC_COLOR;
+      }
+    } else if(f.toggle.type==='alt'){
+      if(on){
+        d.classList.add('show-label');
+        if(lbl) lbl.textContent='img_'+(1000+Math.floor(Math.random()*8999))+'.jpg';
+      } else {
+        d.classList.remove('show-label');
+      }
+    }
+  });
+  const btn=document.getElementById('tBtn');
+  if(btn){btn.textContent=on?f.toggle.offLabel:f.toggle.label; btn.classList.toggle('on',on);}
+  const demo=document.getElementById('demoBox');
+  if(demo) demo.classList.toggle('visible',on);
+}
+
+function clearAllToggles(){
+  if(activeId && activeId!=='both' && activeId!=='pass'){
+    const prev=failures.find(x=>x.id===activeId);
+    if(prev&&prev.toggle) applyToggle(prev,false);
+  }
+  dotEls.forEach(d=>{
+    d.classList.remove('show-label');
+    const t=d.dataset.type;
+    // restore colors
+    if(t==='both'){
+      const hl=d.querySelector('.dot-half-l');
+      const hr=d.querySelector('.dot-half-r');
+      if(hl) hl.style.background=LC_COLOR;
+      if(hr) hr.style.background=ALT_COLOR;
+    } else if(t==='lc'){ d.style.background=LC_COLOR; }
+    else if(t==='alt'){ d.style.background=ALT_COLOR; }
+  });
+}
+
+// ── Select / highlight ────────────────────────────────────────────────
+function selectFailure(fid){
+  if(activeId===fid){resetSelection();return;}
+  clearAllToggles();
+  activeId=fid;
+  toggleOn=false;
+
+  // which dot fids to highlight
+  const highlight = fid==='lc'  ? ['lc','both']
+                  : fid==='alt' ? ['alt','both']
+                  : fid==='both'? ['both']
+                  : ['pass'];
+
+  dotEls.forEach(d=>{
+    if(highlight.includes(d.dataset.fid)) d.classList.remove('dim');
+    else d.classList.add('dim');
+  });
+
+  // float label — use primary color
+  const f=failures.find(x=>x.id===fid);
+  const labelColor = fid==='both'?LC_COLOR : f.color;
+  const fl=document.getElementById('floatLabel');
+  const b=getClusterBounds(highlight);
+  fl.textContent=f.label;
+  fl.style.color=labelColor;
+  fl.style.borderColor=labelColor;
+  fl.style.left=b.cx+'px';
+  fl.style.top=(b.top-28)+'px';
+  fl.style.transform='translateX(-50%)';
+  fl.classList.add('visible');
+
+  // detail panel
+  const panel=document.getElementById('detailPanel');
+  panel.classList.add('visible');
+
+  const dSwatch=document.getElementById('dSwatch');
+  if(fid==='both'){
+    // split swatch
+    dSwatch.style.background='transparent';
+    dSwatch.style.overflow='hidden';
+    dSwatch.style.position='relative';
+    dSwatch.innerHTML=`
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:${LC_COLOR};clip-path:polygon(0 0,100% 0,0 100%)"></div>
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:${ALT_COLOR};clip-path:polygon(100% 0,100% 100%,0 100%)"></div>
+      <svg viewBox="0 0 20 20" fill="none" style="position:absolute;top:3px;left:3px;width:11px;height:11px;z-index:3;pointer-events:none"><circle cx="10" cy="10" r="8" stroke="white" stroke-width="2"/><path d="M10 2a8 8 0 0 1 0 16Z" fill="white"/></svg>
+      <svg viewBox="0 0 20 20" fill="none" style="position:absolute;bottom:3px;right:3px;width:11px;height:11px;z-index:3;pointer-events:none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="white" stroke-width="2"/><line x1="3" y1="4" x2="17" y2="16" stroke="white" stroke-width="2"/></svg>
+    `;
+  } else {
+    dSwatch.style.background=f.color;
+    dSwatch.innerHTML=ICONS[fid]==='undefined'?'':ICONS[fid]||'';
+    if(ICONS[fid]) dSwatch.innerHTML=ICONS[fid];
+  }
+
+  document.getElementById('dName').textContent=f.label;
+  const pctText = fid==='both' ? '~52% of sites have both failures simultaneously'
+                : 'Affects '+f.pct+'% of websites'+(f.avg?' · avg '+f.avg+'× per page':'');
+  document.getElementById('dPct').textContent=pctText;
+  document.getElementById('dDesc').innerHTML=f.desc;
+
+  const ta=document.getElementById('toggleArea');
+  ta.innerHTML='';
+  if(f.toggle){
+    const row=document.createElement('div');
+    row.className='toggle-row';
+    const btn=document.createElement('button');
+    btn.id='tBtn'; btn.className='toggle-btn';
+    btn.style.setProperty('--t-color',f.color);
+    btn.textContent=f.toggle.label;
+    btn.addEventListener('click',e=>{e.stopPropagation();applyToggle(f,!toggleOn);});
+    row.appendChild(btn);
+    ta.appendChild(row);
+    const demo=document.createElement('div');
+    demo.id='demoBox'; demo.className='demo-box';
+    demo.textContent=f.toggle.demoText;
+    ta.appendChild(demo);
+  }
+  buildSwatches();
+}
+
+function resetSelection(){
+  clearAllToggles();
+  activeId=null; toggleOn=false;
+  dotEls.forEach(d=>d.classList.remove('dim','show-label'));
+  document.getElementById('floatLabel').classList.remove('visible');
+  document.getElementById('detailPanel').classList.remove('visible');
+  document.getElementById('toggleArea').innerHTML='';
+  buildSwatches();
+}
+
+// ── Swatches (now 4: lc, alt, both, pass) ────────────────────────────
+function buildSwatches(){
+  const sw=document.getElementById('swatches');
+  sw.innerHTML='';
+  failures.forEach(f=>{
+    const item=document.createElement('div');
+    item.className='sw-item';
+    const btn=document.createElement('button');
+    let cls='sw-btn';
+    if(activeId&&activeId!==f.id) cls+=' dim-sw';
+    if(activeId===f.id) cls+=' active-sw';
+    btn.className=cls;
+
+    if(f.id==='both'){
+      btn.style.background='transparent';
+      btn.style.overflow='hidden';
+      btn.style.position='relative';
+      btn.innerHTML=`
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:${LC_COLOR};clip-path:polygon(0 0,100% 0,0 100%)"></div>
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:${ALT_COLOR};clip-path:polygon(100% 0,100% 100%,0 100%)"></div>
+        <svg viewBox="0 0 20 20" fill="none" style="position:absolute;top:3px;left:3px;width:11px;height:11px;z-index:3;opacity:1;pointer-events:none"><circle cx="10" cy="10" r="8" stroke="white" stroke-width="2"/><path d="M10 2a8 8 0 0 1 0 16Z" fill="white"/></svg>
+        <svg viewBox="0 0 20 20" fill="none" style="position:absolute;bottom:3px;right:3px;width:11px;height:11px;z-index:3;opacity:1;pointer-events:none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="white" stroke-width="2"/><line x1="3" y1="4" x2="17" y2="16" stroke="white" stroke-width="2"/></svg>
+      `;
+    } else {
+      btn.style.background=f.color;
+      if(ICONS[f.id]) btn.innerHTML=ICONS[f.id];
+    }
+    btn.setAttribute('aria-label',f.label);
+    btn.title=f.label;
+    btn.addEventListener('click',e=>{e.stopPropagation();selectFailure(f.id);});
+
+    const lbl=document.createElement('span');
+    lbl.className='sw-label';
+    lbl.textContent=f.label;
+    lbl.style.opacity=activeId&&activeId!==f.id?'0.3':'1';
+    lbl.style.cursor='pointer';
+    lbl.addEventListener('click',e=>{e.stopPropagation();selectFailure(f.id);});
+    item.appendChild(btn);
+    item.appendChild(lbl);
+    sw.appendChild(item);
+  });
+}
+
+grid.addEventListener('click',()=>{
+  if(!revealed){revealDots();return;}
+  resetSelection();
+});
+})();
+</script>
+    </div>
+  </div>
+
+  <!-- ── Transition 1→2 ───────────────────────────────── -->
+  <div class="transition-slide" id="tr1">
+    <i class="ti ti-chart-line transition-icon" aria-hidden="true"></i>
+    <p class="transition-text">From <em>2019 to 2025</em>: Six types of barriers continuously leaving people out.</p>
+    <p class="transition-sub">Years of data across the top million sites show most problems barely moving. Things could be better...</p>
+  </div>
+
+  <!-- ── Viz 2: Trends ────────────────────────────────── -->
+  <div class="viz-section s-panel2" id="viz2">
+    <div class="device-frame">
+      <!-- ── Browser chrome ── EDIT TAB TITLE: change the text inside .chrome-tab.active below -->
+      <!-- TO REMOVE entire chrome: delete the .browser-chrome div below -->
+      <div class="browser-chrome">
+        <!-- TO REMOVE window buttons: delete this .chrome-buttons div -->
+        <div class="chrome-buttons">
+          <div class="chrome-btn chrome-btn-close" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-min" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-max" aria-hidden="true"></div>
+        </div>
+        <div class="chrome-tabs">
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab active" id="tab2">Yearly Trends</div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+        </div>
+      </div>
+      <h2 class="sr-only">Panel 2: Accessibility failure rates from 2019 to 2025. Select failure types to compare trends.</h2>
+
+<div class="panel">
+  <p class="kicker">Web accessibility trends · 2019–2025</p>
+  <h1 class="headline">Most failures are improving... But... barely.</h1>
+  <p class="subhead">...but just how much better? Select a failure type to explore its trend.</p>
+<!--origi in subhead Six years of data across 1 million homepages.
+Note change panel 1 color textfor middle l number back to red ... cuz consistency maybe i dunno -->
+  <div class="filter-row" id="filterRow"></div>
+  <p class="hint">Click a label above to highlight · click two to compare · hover for exact percentages · click label again to deselect</p>
+
+  <div class="chart-wrap">
+    <canvas id="trendChart" role="img" aria-label="Line chart showing 6 accessibility failure types from 2019 to 2025. Low contrast is highest. Empty buttons is the only type mostly decreasing.">Low contrast: 85.3% in 2019, 79.1% in 2025. Missing alt text: 68% in 2019, 55.5% in 2025. Unlabeled forms: 52.8% to 48.2%. Empty links: 58.1% to 45.4%. Empty buttons: 25% to 29.6% — only type increasing. Missing language: 33.1% to 15.8%.</canvas>
+  </div> 
+
+  <button class="reset-btn" id="resetBtn">↩ Show all failure types</button>
+
+  <div class="detail-row" id="detailRow">
+    <div id="d1"></div>
+    <div id="d2"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const YEARS=[2019,2020,2021,2022,2023,2024,2025];
+const FAILURES=[
+  {id:'lc',label:'Low Contrast',color:'#D85A30',dash:[],
+   what:'Text or elements (like icons or buttons) being too similar in color to their background, therefore invisible to low-vision users.',
+   data:[85.3,86.3,83.9,83.6,83.6,81.0,79.1],trendDir:'down',note:'6 percent fewer sites affected since 2019, but still the most widespread failure'},
+  {id:'alt',label:'Missing Alt Text',color:'#534AB7',dash:[6,3],
+   what:'Images have no written description: Screen readers have nothing helpful to read aloud.',
+   data:[68.0,66.0,60.6,56.1,58.2,54.5,55.5],trendDir:'down',note:'Fewer sites affected overall, but progress fluctuated after 2022, almost stalling.'},
+  {id:'form',label:'Unlabeled Form Fields',color:'#0F6E56',dash:[3,3],
+   what:'Login fields or search bars have no label: Users hear only "edit text" with no context.',
+   data:[52.8,53.8,54.4,49.7,45.9,47.6,48.2],trendDir:'flat',note:'Barely changed in six years. Declined after 2021, but fluctuated. No meaningful progress.'},
+  {id:'links',label:'Empty Links',color:'#854F0B',dash:[8,3],
+   what:'Clickable links contain no text: Screen readers announce only "link" with no context.',
+   data:[58.1,59.9,51.3,49.1,50.1,48.6,45.4],trendDir:'down',note:'The second biggest improvement: 13 percent fewer sites affected since 2019'},
+  {id:'btn',label:'Empty Buttons',color:'#185FA5',dash:[4,2,1,2],
+   what:'Buttons have no label: Screen readers announce only "button" with no context.',
+   data:[25.0,28.7,26.9,27.2,28.6,28.2,29.6],trendDir:'up',note:'⚠ The only failure with more sites affected in 2025 than in 2019: a 4.6 percent increase'},
+  {id:'lang',label:'No Language Declared',color:'#72243E',dash:[2,2],
+   what:'Pages don\'t declare their language: Screen readers guess and often mispronounce content.',
+   data:[33.1,28.9,28.9,22.3,18.6,17.1,15.8],trendDir:'down',note:'Biggest drop of any failure: 17 percent fewer sites affected since 2019'}
+];
+
+const TREND_COLORS={up:'#854F0B',down:'#0C447C',flat:'#76756F'}; /* Note: down was green before: #0F6E56 .  Up was #854F0B . Flat was #888780 . reddishorange and gray I changed cuz low contrast*/
+const TREND_LABELS={up:'↑ More sites affected over time',down:'↓ Fewer sites affected over time',flat:'→ Little change over time'};
+
+let selected=[];
+let chart;
+
+function drawDashPreview(canvas,color,dash){
+  const ctx=canvas.getContext('2d');
+  canvas.width=28;canvas.height=12;
+  ctx.clearRect(0,0,28,12);
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2;
+  ctx.setLineDash(dash.length?dash:[]);
+  ctx.beginPath();
+  ctx.moveTo(2,6);ctx.lineTo(26,6);
+  ctx.stroke();
+}
+
+function buildFilters(){
+  const row=document.getElementById('filterRow');
+  FAILURES.forEach(f=>{
+    const btn=document.createElement('button');
+    btn.className='f-btn';
+    btn.dataset.id=f.id;
+    btn.dataset.color=f.color;
+    const cv=document.createElement('canvas');
+    cv.width=28;cv.height=12;
+    cv.style.cssText='width:28px;height:12px;flex-shrink:0;vertical-align:middle';
+    drawDashPreview(cv,f.color,f.dash);
+    btn.appendChild(cv);
+    const lbl=document.createElement('span');
+    lbl.textContent=f.label;
+    btn.appendChild(lbl);
+    btn.addEventListener('click',()=>toggleFilter(f.id));
+    row.appendChild(btn);
+  });
+}
+
+function toggleFilter(id){
+  if(selected.includes(id)){
+    selected=selected.filter(x=>x!==id);
+  } else {
+    if(selected.length>=2) selected.shift();
+    selected.push(id);
+  }
+  updateChart();
+  updateFilters();
+  updateDetail();
+}
+
+function resetAll(){
+  selected=[];
+  updateChart();
+  updateFilters();
+  updateDetail();
+}
+
+function updateFilters(){
+  document.querySelectorAll('.f-btn').forEach(btn=>{
+    const id=btn.dataset.id;
+    const color=btn.dataset.color;
+    const isActive=selected.includes(id);
+    const f=FAILURES.find(x=>x.id===id);
+    if(isActive){
+      btn.style.background=color;
+      btn.style.borderColor=color;
+      btn.style.color='#fff';
+      const cv=btn.querySelector('canvas');
+      if(cv) drawDashPreview(cv,'#fff',f.dash);
+      btn.querySelector('span').style.fontWeight='500';
+    } else {
+      btn.style.background='#fdfcff';
+      btn.style.borderColor=`var(--color-border-secondary, #cec9e8)`;
+      btn.style.color='var(--color-text-secondary)';
+      const cv=btn.querySelector('canvas');
+      if(cv) drawDashPreview(cv,color,f.dash);
+      btn.querySelector('span').style.fontWeight='400';
+    }
+  });
+  document.getElementById('resetBtn').style.display=selected.length?'block':'none';
+}
+
+function hexAlpha(hex,a){
+  const r=parseInt(hex.slice(1,3),16);
+  const g=parseInt(hex.slice(3,5),16);
+  const b=parseInt(hex.slice(5,7),16);
+  return`rgba(${r},${g},${b},${a})`;
+}
+
+function updateChart(){
+  const none=selected.length===0;
+  chart.data.datasets.forEach((ds,i)=>{
+    const f=FAILURES[i];
+    const on=selected.includes(f.id);
+    ds.borderWidth=none?2:on?3:1;
+    // 0.12 originally  for color opacity
+    ds.borderColor=none||on?f.color:hexAlpha(f.color,0.35);
+    ds.pointBackgroundColor=none||on?f.color:hexAlpha(f.color,0.35);
+    // All points are triangles
+    ds.pointStyle = 'triangle';
+    /// Make points bigger on hover ?
+    ds.pointHoverRadius = 8;
+    
+    // NEW: Rotate 180 degrees if the value dropped compared to the previous year
+    ds.rotation = (ctx) => {
+      const index = ctx.dataIndex;
+      const data = ctx.dataset.data;
+      if (index > 0 && data[index] < data[index - 1]) return 180;
+      return 0;
+    };
+    // The logic that controls the sizes for the points
+    ds.pointRadius = none ? (f.id === 'btn' ? 6 : 4) : on ? (f.id === 'btn' ? 7 : 6) : 5;
+    ds.order = on ? 0 : 1;
+  });
+  chart.options.plugins.tooltip.filter=item=>{
+    if(selected.length===0) return true;
+    return selected.includes(FAILURES[item.datasetIndex].id);
+  };
+  // Ensure clip is fully open when user interacts after the initial animation
+  chart.options.plugins.ltrReveal.progress = 1;
+  chart.update('none');
+}
+
+function renderCard(el,f){
+  el.innerHTML='';
+  el.className='d-card';
+  el.style.borderLeftColor=f.color;
+  el.innerHTML=`
+    <div class="d-card-label">${f.label}</div>
+    <div class="d-card-val">${f.data[0].toFixed(1)}% → ${f.data[6].toFixed(1)}%</div>
+    <div class="d-card-trend" style="color:${TREND_COLORS[f.trendDir]}">${TREND_LABELS[f.trendDir]}</div>
+    <div class="d-card-what">${f.what}</div>
+    <div class="d-card-note">${f.note}</div>`;
+}
+
+function renderEmpty(el){
+  el.innerHTML='';
+  el.className='empty-card';
+  el.innerHTML='<p>Select a second type to compare</p>';
+}
+
+function updateDetail(){
+  const row=document.getElementById('detailRow');
+  const d1=document.getElementById('d1');
+  const d2=document.getElementById('d2');
+  if(selected.length===0){row.classList.remove('visible');return;}
+  row.classList.add('visible');
+  renderCard(d1,FAILURES.find(x=>x.id===selected[0]));
+  if(selected[1]) renderCard(d2,FAILURES.find(x=>x.id===selected[1]));
+  else renderEmpty(d2);
+}
+
+// Left-to-right reveal plugin: clips drawing area so lines appear L→R
+const ltrRevealPlugin = {
+  id: 'ltrReveal',
+  beforeDatasetsDraw(chart, args, options) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+    const progress = options.progress !== undefined ? options.progress : 1;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(chartArea.left - 12, chartArea.top - 18,
+             (chartArea.right - chartArea.left + 24) * progress,
+             chartArea.bottom - chartArea.top + 36);
+    ctx.clip();
+  },
+  afterDatasetsDraw(chart) {
+    chart.ctx.restore();
+  }
+};
+
+function initChart(){
+  if(window._trendChart){ window._trendChart.destroy(); window._trendChart=null; }
+  const ctx=document.getElementById('trendChart').getContext('2d');
+
+  // Animate the clip from 0→1 over 1600ms
+  let startTime = null;
+  const duration = 1600;
+  const ease = t => t<0.5 ? 2*t*t : -1+(4-2*t)*t; // easeInOutQuad
+
+  chart=new Chart(ctx,{
+    type:'line',
+    plugins:[ltrRevealPlugin],
+    data:{
+      labels:YEARS,
+      datasets:FAILURES.map(f=>({
+        label:f.label,
+        data:f.data,
+        borderColor:f.color,
+        backgroundColor:'transparent',
+        borderWidth:2,
+        borderDash:f.dash,
+        pointBackgroundColor:f.color,
+        pointStyle: 'triangle',
+        rotation: (ctx) => {
+          const index = ctx.dataIndex;
+          const data = ctx.dataset.data;
+          return (index > 0 && data[index] < data[index - 1]) ? 180 : 0;
+        },
+        pointRadius: f.id==='btn' ? 6 : 4,
+        pointHoverRadius:8,
+        tension:0.3,
+        fill:false
+      }))
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:{duration:0}, // disable built-in animation; we drive it manually
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        ltrReveal:{ progress: 0 },
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#fdfcff',
+          titleColor:'#1c1a35',
+          bodyColor:'#3d3a5e',
+          borderColor:'#d8d3ee',
+          borderWidth:1,
+          padding:10,
+          filter:()=>true,
+          callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(80,70,160,0.06)'},border:{display:false},ticks:{font:{size:13},color:'#3d3a5e'}},
+        y:{min:0,max:100,grid:{color:'rgba(80,70,160,0.06)'},border:{display:false},
+          ticks:{font:{size:13},color:'#3d3a5e',callback:v=>v+'%',stepSize:20}}
+      }
+    }
+  });
+
+  // Drive left-to-right reveal via rAF
+  function animate(ts) {
+    if (!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+    const raw = Math.min(elapsed / duration, 1);
+    const progress = ease(raw);
+    chart.options.plugins.ltrReveal.progress = progress;
+    chart.update('none');
+    if (raw < 1) requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  window._trendChart=chart;
+}
+
+// Expose for scroll-triggered animation
+window._initTrendChart = initChart;
+
+buildFilters();
+// Don't call initChart here — observer will call it when viz2 enters view
+// But draw a silent placeholder so the canvas isn't blank before scroll
+initChart();
+document.getElementById("resetBtn").addEventListener("click", resetAll);
+})();
+</script>
+    </div>
+  </div>
+
+  <!-- ── Transition 2→3 ───────────────────────────────── -->
+  <div class="transition-slide" id="tr2">
+    <i class="ti ti-building-store transition-icon" aria-hidden="true"></i>
+    <p class="transition-text">Not every website is created equally. Some industries' websites compared to others <em>have nearly twice these barriers.</em></p>
+    <p class="transition-sub">Technology is becoming a necessity for everyday life. For some, that means ease of living... but for others...</p>
+  </div>
+
+  <!-- ── Viz 3: Industries ─────────────────────────────── -->
+  <div class="viz-section s-panel3" id="viz3">
+    <div class="device-frame">
+      <!-- ── Browser chrome ── EDIT TAB TITLE: change the text inside .chrome-tab.active below -->
+      <!-- TO REMOVE entire chrome: delete the .browser-chrome div below -->
+      <div class="browser-chrome">
+        <!-- TO REMOVE window buttons: delete this .chrome-buttons div -->
+        <div class="chrome-buttons">
+          <div class="chrome-btn chrome-btn-close" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-min" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-max" aria-hidden="true"></div>
+        </div>
+        <div class="chrome-tabs">
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab active" id="tab3">Access By Industry</div>
+          <div class="chrome-tab-stub"></div>
+        </div>
+      </div>
+      <h2 class="sr-only">Panel 3: Average accessibility errors per homepage across 16 industries. A vertical line shows the overall average (51). Shopping has the most. Government has the fewest.</h2>
+
+<div class="panel">
+  <p class="kicker">16 industries · Average errors per homepage · 2025</p>
+  <h1 class="headline">With 51 errors on average, some industries have far to go... Some much farther.</h1>
+  <p class="subhead">...that means living gets difficult. Everyday essentials become a burden to access.
+    <br><br>Click any bar to see details.
+  </p>
+ <!-- Chart: Average accessibility errors per page across 16 industries. The vertical line marks the overall average of 51 errors. -->
+ <!-- old heading  .. Some industries have nearly twice the accessibility failures--> 
+  <!--With 51 accessibility errors on average, some industries have far to go. Some much farther.</h1>
+ old? headline I made .
+ Maybe should be  ... some much farther
+ Also note  add what kinds of essentials are on each industry websites-->
+ <div class="controls">
+    <button class="ctrl-btn" id="sortErrors">Sort by errors</button>
+    <button class="ctrl-btn" id="sortAlpha">Sort alphabetically</button>
+  </div>
+
+  <button class="reset-btn" id="resetBtn2">↩ Show all industries</button>
+<!-- NOTE: Could make this detail placeholder have the detail card be visible with this text
+  so dont have to say click in the subhead?-->
+  <div class="panel3-body">
+    <div class="chart-area" id="chartArea"></div>
+    <div class="detail-card" id="detailCard">
+      <div class="detail-placeholder" id="detailPlaceholder">Click any industry bar to see details here.</div>
+      <div id="dcInner" style="display:none">
+        <div class="dc-name" id="dcName"></div>
+        <div class="dc-val" id="dcVal"></div>
+        <div class="dc-sub" id="dcSub"></div>
+        <div id="dcTag"></div>
+        <p id="dcEssential" class="d-card-note" 
+        style="display:none;margin-top:8px;font-style:italic"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const BASELINE=51;
+const ABOVE_COLOR='#C17B10';
+const BELOW_COLOR='#185FA5';
+const BASELINE_COLOR='#2e2c2a';
+const MAX_ERRORS=80;
+// Gradients: amber for above-average, blue for below-average
+const ABOVE_GRADIENT='linear-gradient(90deg,#C17B10 0%,#E8A020 100%)';
+const BELOW_GRADIENT='linear-gradient(90deg,#185FA5 0%,#3B8FD4 100%)';
+
+const INDUSTRIES=[
+  {name:'Shopping',errors:71.2,vs:39.8,icon:'ti-shopping-cart',
+   essential:'Browsing and purchasing clothing, groceries, household items, and more online.',},
+  {name:'Sports',errors:66.3,vs:30.1,icon:'ti-ball-football',
+   essential:'Ticket purchasing and event information.'},
+  {name:'Style & Fashion',errors:64.7,vs:26.9,icon:'ti-hanger', 
+   essential:'Browsing and purchasing clothing and accessories.'},
+  {name:'Automotive',errors:62.1,vs:21.8,icon:'ti-car', 
+   essential:'Researching and purchasing vehicles and services.'},
+  {name:'Food & Drink',errors:59.2,vs:16.1,icon:'ti-tools-kitchen-2', 
+   essential:'Ordering food and finding restaurants online.'},
+  {name:'Travel',errors:58.1,vs:13.9,icon:'ti-plane', 
+   essential:'Booking flights, hotels, and transport.'},
+  {name:'Entertainment',errors:55.2,vs:8.2,icon:'ti-device-tv',
+   essential:'Accessing streaming, events, and media.'},
+  {name:'Business',errors:52.8,vs:3.5,icon:'ti-briefcase',
+   essential:'Finding jobs and accessing professional services.'},
+  {name:'News & Media',errors:50.1,vs:-1.8,icon:'ti-news',
+   essential:'Staying informed about current events.'},
+  {name:'Health',errors:43.2,vs:-15.3,icon:'ti-heart', 
+   essential:'Finding doctors, booking appointments, accessing medical records.'},
+  {name:'Law & Government',errors:42.3,vs:-17.0,icon:'ti-scale',
+   essential:'Accessing legal information and government services.'},
+  {name:'Reference',errors:41.8,vs:-18.0,icon:'ti-book',
+   essential:'Looking up information and research materials.'},
+  {name:'Education',errors:40.7,vs:-20.2,icon:'ti-school',
+   essential:'Accessing online learning and academic resources.'},
+  {name:'Non-Profit',errors:40.0,vs:-21.6,icon:'ti-heart-handshake',
+   essential:'Finding community resources and support services.'},
+  {name:'Personal Finance',errors:37.7,vs:-26.0,icon:'ti-coin',
+   essential:'Managing money and banking online.'},
+  {name:'Government',errors:37.2,vs:-27.0,icon:'ti-building-community',
+   essential:'Accessing public services, benefits, civic information.'}
+];
+
+let sortMode='errors';
+let activeId=null;
+
+function barColor(ind){
+  return ind.errors>BASELINE?ABOVE_COLOR:BELOW_COLOR;
+}
+function barGradient(ind){
+  return ind.errors>BASELINE?ABOVE_GRADIENT:BELOW_GRADIENT;
+}
+
+function getOrdered(){
+  const arr=[...INDUSTRIES];
+  if(sortMode==='alpha') arr.sort((a,b)=>a.name.localeCompare(b.name));
+  return arr;
+}
+
+function setSort(mode){
+  sortMode=mode;
+  const eBtn=document.getElementById('sortErrors');
+  const aBtn=document.getElementById('sortAlpha');
+  const borderBtn=getComputedStyle(document.documentElement).getPropertyValue('--color-border-button').trim()||'#8a8690';
+  if(mode==='errors'){
+    eBtn.style.cssText=`background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);border-width:2px;font-weight:500`;
+    aBtn.style.cssText=`background:#fdfcff;color:var(--color-text-secondary);border-color:${borderBtn};border-width:2px;font-weight:400`;
+  } else {
+    aBtn.style.cssText=`background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary);border-width:2px;font-weight:500`;
+    eBtn.style.cssText=`background:#fdfcff;color:var(--color-text-secondary);border-color:${borderBtn};border-width:2px;font-weight:400`;
+  }
+  render();
+}
+
+function resetSelection(){
+  activeId=null;
+  const card=document.getElementById('detailCard');
+  card.classList.remove('visible');
+  card.style.borderLeftColor='#ccc';
+  document.getElementById('detailPlaceholder').style.display='block';
+  document.getElementById('dcInner').style.display='none';
+  document.getElementById('resetBtn2').style.display='none';
+  render();
+}
+
+function render(){
+  const area=document.getElementById('chartArea');
+  area.innerHTML='';
+  const bpct=(BASELINE/MAX_ERRORS)*100;
+
+  // baseline label row
+  const lblRow=document.createElement('div');
+  lblRow.style.cssText='display:flex;margin-bottom:2px;padding-left:156px;position:relative;height:16px';
+  const blbl=document.createElement('span');
+  blbl.style.cssText=`position:absolute;left:calc(8px + ${bpct}%);font-size:13px;color:${BASELINE_COLOR};white-space:nowrap;transform:translateX(-50%)`;
+  blbl.textContent='avg 51';
+  lblRow.appendChild(blbl);
+  area.appendChild(lblRow);
+
+  getOrdered().forEach(ind=>{
+    const isActive=activeId===ind.name;
+    const isDim=activeId&&!isActive;
+
+    const row=document.createElement('div');
+    row.className='bar-row'+(isActive?' active':'')+(isDim?' dim':'');
+    row.dataset.name=ind.name;
+
+    const icon=document.createElement('div');
+    icon.className='bar-icon';
+    icon.innerHTML=`<i class="ti ${ind.icon}" aria-hidden="true"></i>`;
+
+    const lbl=document.createElement('div');
+    lbl.className='bar-label';
+    lbl.textContent=ind.name;
+
+    const track=document.createElement('div');
+    track.className='bar-track';
+
+    const fill=document.createElement('div');
+    fill.className='bar-fill';
+    const targetW=(ind.errors/MAX_ERRORS*100)+'%';
+    fill.dataset.targetWidth=targetW;
+    // Start at 0; observer will animate to target when panel enters view
+    const alreadyAnimated=window._viz3Animated||false;
+    fill.style.cssText=`width:${alreadyAnimated?targetW:'0%'};background:${barGradient(ind)};transition:width .7s cubic-bezier(.4,0,.2,1)`;
+    track.appendChild(fill);
+
+    const bline=document.createElement('div');
+    bline.className='baseline-line';
+    bline.style.cssText=`left:${bpct}%;background:${BASELINE_COLOR}`;
+    track.appendChild(bline);
+
+    const val=document.createElement('div');
+    val.className='bar-val';
+    val.textContent=ind.errors;
+
+    row.appendChild(icon);
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+    row.addEventListener('click',()=>selectIndustry(ind.name));
+    area.appendChild(row);
+  });
+}
+
+function selectIndustry(name){
+  if(activeId===name){
+    resetSelection();
+    return;
+  }
+  activeId=name;
+  const ind=INDUSTRIES.find(x=>x.name===name);
+  const color=barColor(ind);
+
+  const card=document.getElementById('detailCard');
+  card.classList.add('visible');
+  card.style.borderLeftColor=color;
+
+  // hide placeholder, show inner content
+  // NOTE: after previous note.. Herp derp i guess it would be here then ... ?
+  document.getElementById('detailPlaceholder').style.display='none';
+  const inner=document.getElementById('dcInner');
+  inner.style.display='block';
+
+  document.getElementById('dcName').innerHTML=`<i class="ti ${ind.icon}" aria-hidden="true" style="font-size:16px"></i>${ind.name}`;
+  document.getElementById('dcVal').textContent=ind.errors+' avg errors per page';
+  document.getElementById('dcVal').style.color=color;
+
+  const diff=Math.abs(ind.vs).toFixed(1);
+  const dirWord=ind.vs>0?'more':'fewer';
+  document.getElementById('dcSub').textContent=diff+'% '+dirWord+' errors than the average website';
+
+  const tag=document.createElement('span');
+  tag.className='baseline-tag';
+  if(ind.vs>0){
+    tag.style.cssText='background:#FFF3E0;color:#854F0B';
+    tag.textContent='↑ Above average';
+  } else {
+    // NOTE: Change these colors instead of green and red  ... ?
+    tag.style.cssText='background:#E6F1FB;color:#0C447C';
+    tag.textContent='↓ Below average';
+  }
+  const tagEl=document.getElementById('dcTag');
+  tagEl.innerHTML='';
+  tagEl.appendChild(tag);
+
+  const essentialEl = document.getElementById('dcEssential');
+  if(ind.essential){
+    essentialEl.textContent = ind.essential;
+    essentialEl.style.display = 'block';
+  } else {
+    essentialEl.style.display = 'none';
+  }
+
+  document.getElementById('resetBtn2').style.display='block';
+  render();
+}
+
+setSort('errors');
+window.addEventListener('resize',render);
+document.getElementById('sortErrors').addEventListener('click',()=>setSort('errors'));
+document.getElementById('sortAlpha').addEventListener('click',()=>setSort('alpha'));
+document.getElementById('resetBtn2').addEventListener('click',resetSelection);
+})();
+</script>
+    </div>
+  </div>
+
+  <!-- ── Transition 3→4 ───────────────────────────────── -->
+  <div class="transition-slide" id="tr3">
+    <i class="ti ti-tool transition-icon" aria-hidden="true"></i>
+    <p class="transition-text">There's a <em>tool</em> to help make websites more accessible...</p>
+    <p class="transition-sub">...But all tools can be misused, intentionally or not. For this one...</p>
+  </div>
+<!-- Original  -  So what about the developers who are <em>trying</em> to fix it?</p>
+<p class="transition-sub">There's a tool called ARIA designed specifically to make websites more accessible. 4 in 5 sites now use it. The results are not what you'd expect.</p>
+  </div>-->
+  <!-- ── Viz 4: ARIA paradox ───────────────────────────── -->
+  <div class="viz-section s-panel4" id="viz4">
+    <div class="device-frame">
+      <!-- ── Browser chrome ── EDIT TAB TITLE: change the text inside .chrome-tab.active below -->
+      <!-- TO REMOVE entire chrome: delete the .browser-chrome div below -->
+      <div class="browser-chrome">
+        <!-- TO REMOVE window buttons: delete this .chrome-buttons div -->
+        <div class="chrome-buttons">
+          <div class="chrome-btn chrome-btn-close" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-min" aria-hidden="true"></div>
+          <div class="chrome-btn chrome-btn-max" aria-hidden="true"></div>
+        </div>
+        <div class="chrome-tabs">
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab-stub"></div>
+          <div class="chrome-tab active" id="tab4">The Paradox</div>
+        </div>
+      </div>
+      <h2 class="sr-only">Panel 4: Even when developers might try to fix accessibility with ARIA, pages can have more than twice the errors of pages that don't use it.</h2>
+
+<div class="panel">
+  <p class="kicker"> With ARIA vs. Without · Accessibility Errors · 2025</p>
+  <h1 class="headline">Most pages use ARIA for accessibility... But still have twice as many errors</h1>
+  <p class="subhead">...it was misused a lot more often than not.<br>
+     ARIA is a set of tools developers use to make websites more accessible. 79.4 percent of pages use it. But these pages using ARIA have twice as many errors on average as pages without. </p>
+ 
+ <!-- NOTE: mebrain derp star wars joke meme : You were the chosen one! It was said that you would destroy the errors, not join them!
+   You were supposed to bring access(ibility) to the Web, not leave it in darkness!
+   or walls/bars/errors  .. walls and bars figurative . bars like barriers  
+   .. barred walls .. cells... though why would you want to go INTO a cell lol .. so maybe that fails there..
+   
+   ARIA! You were supposed to destroy / reduce the errors, not join them!-->
+  <!-- data - 
+  "aria_usage": {
+    "pages_using_aria_pct": 79.4,
+    "avg_attributes_per_page": 105.5,
+    "errors_with_aria": 57,
+    "errors_without_aria": 27
+  },
+  "heading_analysis": {
+    "avg_headings_per_page": 25,
+    "multiple_h1_pct": 16.3,
+    "skipped_levels_pct": 39.0,
+    "no_headings_pct": 9.8-->
+
+  <!-- Toggle -->
+  <div class="aria-toggle-wrap" role="group" aria-label="Compare pages with and without ARIA">
+    <button class="aria-toggle-btn" id="btnNoAria">Without ARIA</button>
+    <button class="aria-toggle-btn active" id="btnAria">With ARIA</button>
+  </div>
+
+  <!-- Comparison bars -->
+  <div class="aria-compare">
+    <p class="compare-label">Average accessibility errors per page</p>
+    <div class="bar-group" id="barGroup">
+      <div class="bar-item">
+        <div class="bar-item-label" id="labelNoAria">Without ARIA</div>
+        <div class="bar-track">
+          <div class="bar-fill" id="fillNoAria" style="width:0%;background:#4a8fa8">
+            <span class="bar-fill-val" id="valNoAria">27</span>
+          </div>
+        </div>
+        <div class="bar-item-delta" id="deltaNoAria"></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-item-label" id="labelAria">With ARIA</div>
+        <div class="bar-track">
+          <div class="bar-fill" id="fillAria" style="width:0%;background:#C05A0A">
+            <span class="bar-fill-val" id="valAria">57</span>
+          </div>
+        </div>
+        <div class="bar-item-delta" id="deltaAria"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Callout -->
+  <div class="callout" id="ariaCallout">
+    <div class="callout-val" id="calloutVal">2.1×</div>
+    <p class="callout-lbl" id="calloutLbl">more errors on pages using ARIA than pages that don't.</p>
+        <p class="hint">Pages using ARIA average 105.5 attributes per page.</p>
+  </div>
+
+  <!-- Heading section -->
+  <hr class="section-divider">
+  <p class="section-label">Another thing misused · Common Heading Errors </p>
+  <h2 class="section-headline">Headings are important for screen reader navigation... But many pages use them wrong. </h2>
+  <p class="section-sub">Screen readers use headings like a table of contents to navigate a page. If that navigation is broken... users can be misled.</p>
+  <p class="hint">Click each stat to see what that looks like. (Avg: 25 headings per page)</p>
+<!-- NOTE: Chaos grid section added rectangles represent headers ... rectanglees the lang of rectangles-->
+  <div class="chaos-grid">
+  <div class="chaos-card" id="card-skip">
+    <div class="chaos-card-content">
+      <div class="card-text">
+        <div class="chaos-val">39%</div>
+        <div class="chaos-lbl">skip heading levels</div>
+      </div>
+      <div class="card-icon-viz">
+        <div style="width:60px; height:8px; background:#C05A0A; margin-bottom:8px; border-radius:2px;"></div>
+        <div style="width:60px; height:2px; border:1px dashed #ccc; margin-bottom:8px;"></div>
+        <div style="width:40px; height:6px; background:#C05A0A; border-radius:2px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chaos-card" id="card-multi">
+    <div class="chaos-card-content">
+      <div class="card-text">
+        <div class="chaos-val">16.3%</div>
+        <div class="chaos-lbl">have multiple H1s</div>
+      </div>
+      <div class="card-icon-viz">
+        <div style="width:65px; height:8px; background:#C05A0A; margin-bottom:6px; border-radius:2px;"></div>
+        <div style="width:65px; height:8px; background:#C05A0A; margin-bottom:6px; border-radius:2px;"></div>
+        <div style="width:65px; height:8px; background:#C05A0A; border-radius:2px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chaos-card" id="card-none">
+    <div class="chaos-card-content">
+      <div class="card-text">
+        <div class="chaos-val">9.8%</div>
+        <div class="chaos-lbl">have no headings at all</div>
+      </div>
+      <div class="card-icon-viz">
+        <div style="width:50px; height:2px; border:1px dashed #bbb; margin-bottom:8px;"></div>
+        <div style="width:40px; height:2px; border:1px dashed #bbb; margin-bottom:8px;"></div>
+        <div style="width:55px; height:2px; border:1px dashed #bbb;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="heading-demo" id="headingDemo">
+    <div class="heading-demo-title" id="demoTitle"></div>
+    <div id="demoContent"></div>
+    <p class="demo-explain" id="demoExplain"></p>
+  </div>
+<!-- Old closing aigenerated <p class="closing">ARIA and heading structure are fixable — but only if developers understand the rules. The data suggests that many are adding tools without the knowledge to use them correctly. The web is trying to become more accessible. It's just not succeeding.</p>-->
+<!-- other closing ai generated after reading prior afterI'mtryingtorewritethings "ARIA and heading structure are fixable — but only when used correctly. The web has far to go before everyone can use it equally. But knowing where it fails is the first step."-->
+
+</div>
+
+<script>
+(function(){
+// ── ARIA bar state ────────────────────────────────────────────────────
+const MAX_ERRORS = 70; // scale max for bars
+let currentView = 'aria';
+
+const DEMOS = {
+  skip: {
+    title: 'What skipped heading levels looks like',
+    explain: 'A screen reader navigating by headings would jump from "Chapter 1" straight to a sub-sub-section, with no way to know what was skipped. It\'s like a table of contents that skips entire chapters.',
+    rows: [
+      {tag:'H1', ok:true,  text:'Welcome to Our Store'},
+      {tag:'H3', ok:false, text:'Featured Products', note:'← skipped H2'},
+      {tag:'H5', ok:false, text:'Winter Boots',     note:'← skipped H4'},
+      {tag:'H2', ok:true,  text:'About Us'},
+      {tag:'H4', ok:false, text:'Our History',        note:'← skipped H3'},
+    ]
+  },
+  multi: {
+    title: 'What multiple H1s looks like',
+    explain: 'An H1 (header level 1) is supposed to be the single main title of the page, like a book\'s title. Multiple H1s tell a screen reader there are several "main topics," making it impossible to understand what the page is actually about.',
+    rows: [
+      {tag:'H1', ok:false, text:'Woolly Sheep Scarf',     note:'← first H1'},
+      {tag:'H2', ok:true,  text:'Product Description'},
+      {tag:'H1', ok:false, text:'Related Products',      note:'← second H1'},
+      {tag:'H1', ok:false, text:'Customer Reviews',      note:'← third H1'},
+      {tag:'H2', ok:true,  text:'Write a Review'},
+    ]
+  },
+  none: {
+    title: 'What no headings looks like to a screen reader',
+    explain: 'Without any headings, a screen reader user has to listen to the entire page from top to bottom to find what they need. This is like reading a book with no chapters, no section breaks, and no table of contents.',
+    rows: [
+      {tag:'DIV', ok:false, text:'Welcome to our store'},
+      {tag:'DIV', ok:false, text:'Shop our latest collection'},
+      {tag:'DIV', ok:false, text:'Free shipping on orders over $50'},
+      {tag:'DIV', ok:false, text:'Customer favorites'},
+      {tag:'DIV', ok:false, text:'Sign up for our newsletter'},
+    ]
+  }
+};
+
+let activeDemo = null;
+
+// ── Crack overlay helper ──────────────────────────────────────────────
+// Injects an SVG crack pattern onto a bar fill element.
+// Cracks are full-height zig-zag fracture lines, spread across the colored fill.
+// More cracks on bars with more errors.
+function buildCrackSvg(errors, maxErrors) {
+  const pct = errors / maxErrors; // 0–1
+  const numCracks = Math.round(3 + pct * 9); // 3 on low-error bars, up to 12 on high
+  let paths = '';
+  const W = 100, H = 100; // viewBox units
+
+  // Seed positions spread across the bar width with slight randomness
+  const positions = [];
+  for (let i = 0; i < numCracks; i++) {
+    // Spread cracks relatively evenly with jitter
+    const baseX = (i + 0.5 + (Math.random() - 0.5) * 0.7) / numCracks * W;
+    positions.push(Math.max(2, Math.min(98, baseX)));
+  }
+  positions.sort((a, b) => a - b);
+
+  positions.forEach(startX => {
+    // Build a zig-zag from top to bottom
+    let y = 0;
+    let x = startX;
+    let d = `M${x.toFixed(1)},0`;
+    const segments = 5 + Math.floor(Math.random() * 4); // 5–8 zigs
+    const stepH = H / segments;
+    for (let s = 0; s < segments; s++) {
+      const nextY = (s + 1) * stepH + (Math.random() - 0.5) * stepH * 0.3;
+      const jitter = (Math.random() - 0.5) * 10; // horizontal deviation per zig
+      x = Math.max(2, Math.min(98, x + jitter));
+      d += ` L${x.toFixed(1)},${Math.min(H, nextY).toFixed(1)}`;
+    }
+    // Opacity: subtle but visible — lighter near left edge, slightly more visible right
+    const xFrac = startX / W;
+    const opacity = (0.22 + xFrac * 0.25).toFixed(2);
+    paths += `<path d="${d}" stroke="rgba(255,255,255,${opacity})" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%">${paths}</svg>`;
+}
+
+// Add an 'opacity' parameter to your function
+function addCrackOverlay(fillEl, errors, maxErrors, opacity = 1) {
+  // Remove any existing overlay
+  const existing = fillEl.querySelector('.bar-crack-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'bar-crack-overlay';
+  overlay.innerHTML = buildCrackSvg(errors, maxErrors);
+  fillEl.style.position = 'relative';
+  fillEl.style.overflow = 'hidden';
+  overlay.style.opacity = opacity; // Add this line
+  fillEl.appendChild(overlay);
+
+}
+
+function setView(view) {
+  currentView = view;
+
+  const btnAria   = document.getElementById('btnAria');
+  const btnNoAria = document.getElementById('btnNoAria');
+  const fillAria   = document.getElementById('fillAria');
+  const fillNoAria = document.getElementById('fillNoAria');
+  const labelAria   = document.getElementById('labelAria');
+  const labelNoAria = document.getElementById('labelNoAria');
+  const deltaAria   = document.getElementById('deltaAria');
+  const deltaNoAria = document.getElementById('deltaNoAria');
+  const calloutVal = document.getElementById('calloutVal');
+  const calloutLbl = document.getElementById('calloutLbl');
+
+  // Animate immediately if panel already animated; otherwise store target and wait
+  const viz4Visible = window._viz4Animated || false;
+
+  if(view === 'aria') {
+    btnAria.classList.add('active');
+    btnNoAria.classList.remove('active');
+
+    const ariaW = (57/MAX_ERRORS*100)+'%';
+    const noAriaW = (27/MAX_ERRORS*100)+'%';
+    fillAria.dataset.targetWidth = ariaW;
+    fillNoAria.dataset.targetWidth = noAriaW;
+    fillAria.style.background = '#C05A0A';
+    fillNoAria.style.background = '#aaa';
+    if(viz4Visible){ fillAria.style.width=ariaW; fillNoAria.style.width=noAriaW; }
+    else { fillAria.style.width='0%'; fillNoAria.style.width='0%'; }
+
+    labelAria.classList.add('active-label');
+    labelNoAria.classList.remove('active-label');
+
+    deltaAria.innerHTML   = '<span style="color:#BD580A;font-weight:600">57 errors</span>'; /*NOTE: Changed from #C05A0A for accesssiblity */
+    deltaNoAria.innerHTML = '<span style="color:#707070">27 errors</span>'; /*NOTE: Changed from #888 for accesssiblity */
+
+    calloutVal.textContent = '2.1×';
+    calloutLbl.textContent = 'more errors on pages using ARIA — the tool meant to help is correlated with more problems';
+
+    addCrackOverlay(fillAria, 57, MAX_ERRORS, 1);
+    addCrackOverlay(fillNoAria, 27, MAX_ERRORS, 0.7);
+
+  } else {
+    btnNoAria.classList.add('active');
+    btnAria.classList.remove('active');
+
+    const noAriaW = (27/MAX_ERRORS*100)+'%';
+    const ariaW = (57/MAX_ERRORS*100)+'%';
+    fillNoAria.dataset.targetWidth = noAriaW;
+    fillAria.dataset.targetWidth = ariaW;
+    fillNoAria.style.background = '#4a8fa8';
+    fillAria.style.background = '#aaa';
+    if(viz4Visible){ fillNoAria.style.width=noAriaW; fillAria.style.width=ariaW; }
+    else { fillNoAria.style.width='0%'; fillAria.style.width='0%'; }
+
+    labelNoAria.classList.add('active-label');
+    labelAria.classList.remove('active-label');
+
+    deltaNoAria.innerHTML = '<span style="color:#407C91;font-weight:600">27 errors</span>'; /*NOTE: Changed from #4a8fa8 for accesssiblity */
+    deltaAria.innerHTML   = '<span style="color:#707070">57 errors</span>'; /*NOTE: Changed from #888 for accesssiblity */
+
+    calloutVal.style.color = '#407C91';
+    calloutVal.textContent = '27';
+    calloutLbl.textContent = 'average errors on pages without ARIA — less than half the errors of pages that use it';
+
+    addCrackOverlay(fillNoAria, 27, MAX_ERRORS, 1);
+    addCrackOverlay(fillAria, 57, MAX_ERRORS, 0.7);
+  }
+
+  if(view === 'aria') calloutVal.style.color = '#C05A0A';
+}
+
+function showDemo(type) {
+  // toggle off if same card clicked again
+  if(activeDemo === type) {
+    activeDemo = null;
+    document.getElementById('headingDemo').classList.remove('visible');
+    document.querySelectorAll('.chaos-card').forEach(c=>c.classList.remove('active'));
+    return;
+  }
+  activeDemo = type;
+  document.querySelectorAll('.chaos-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('card-'+type).classList.add('active');
+
+  const demo = DEMOS[type];
+  document.getElementById('demoTitle').textContent = demo.title;
+  document.getElementById('demoExplain').textContent = demo.explain;
+
+  const content = document.getElementById('demoContent');
+  content.innerHTML = '';
+  // NOTE: Added heading blocks here
+  demo.rows.forEach(row => {
+    const r = document.createElement('div');
+    r.className = 'hd-row';
+
+    // NEW: Create the representative visual block
+    // Inside showDemo -> demo.rows.forEach
+    const visual = document.createElement('div');
+    visual.className = 'hd-visual-block';// This matches the CSS above!
+    // ... set widths/heights based on H1, H2, H5 ...
+    r.appendChild(visual); //NOTE: Added afterhand ? 
+
+
+    // Logic for block sizing based on Heading Level
+    if (row.tag === 'H1') {
+      visual.style.width = '40px';
+      visual.style.height = '10px';
+    } else if (row.tag === 'H2') {
+      visual.style.width = '30px';
+      visual.style.height = '7px';
+    } else if (row.tag === 'H3') {
+      visual.style.width = '20px';
+      visual.style.height = '5px';
+    } else if (row.tag === 'H4' || row.tag === 'H5') {
+      visual.style.width = '12px';
+      visual.style.height = '3px';
+    } else {
+      // For DIVs or unknown tags
+      visual.style.width = '30px';
+      visual.style.height = '2px';
+      visual.style.border = '1px dashed #ccc'; // Show it's not a real heading
+      visual.style.background = 'transparent';
+    }
+
+    // Apply color based on if it's "OK" or "BAD"
+    if (!row.ok) {
+        visual.style.background = '#C05A0A'; // Error orange
+        if (row.tag.includes('H')) visual.style.boxShadow = '0 0 5px rgba(192, 90, 10, 0.4)';
+    } else {
+        visual.style.background = '#4a8fa8'; // Good blue/gray
+    }
+
+    r.appendChild(visual); // Add the block first
+
+    const tag = document.createElement('span');
+    tag.className = 'hd-tag ' + (row.ok ? 'ok' : 'bad');
+    tag.textContent = row.tag;
+    
+    const txt = document.createElement('span');
+    txt.className = 'hd-text';
+    txt.textContent = row.text;
+
+    r.appendChild(tag);
+    r.appendChild(txt);
+    
+    if(row.note){
+      const note = document.createElement('span');
+      note.className = 'hd-note';
+      note.textContent = row.note;
+      r.appendChild(note);
+    }
+    content.appendChild(r);
+  });
+
+  document.getElementById('headingDemo').classList.add('visible');
+}
+
+// Wire up event listeners
+document.getElementById('btnNoAria').addEventListener('click',()=>setView('none'));
+document.getElementById('btnAria').addEventListener('click',()=>setView('aria'));
+document.getElementById('card-skip').addEventListener('click',()=>showDemo('skip'));
+document.getElementById('card-multi').addEventListener('click',()=>showDemo('multi'));
+document.getElementById('card-none').addEventListener('click',()=>showDemo('none'));
+// Init
+setTimeout(()=>setView('aria'), 120);
+})();
+</script>
+    </div>
+  </div>
+
+  <!-- ── Conclusion transition ──────────────────────── -->
+  <div class="transition-slide" id="tr4">
+    <p class="transition-text"><em>Accessibility means equal access for everyone.</em> To meet the standard, the web still has far to go.</p>
+    <p class="transition-sub"> There is so much potential for improvement, but not enough progress being made... However, if we understand these issues and fix them properly, those gaps can close and that standard can finally be reached. <br><strong>No one should be left behind.</strong></p> <!--NOTE: Or also <em> </em> forhopeful brightpurple feel and connection to othersturf-->
+  </div>
+  <!-- no icon for book ends hm <i class="ti ti-[icon] transition-icon" aria-hidden="true"></i> -->
+  
+  <!-- scroll to top -->
+  <button id="scrollTopBtn" aria-label="Scroll back to top"
+  onclick="window.scrollTo({top:0, behavior:'smooth'})">
+    ↑ Back to top
+  </button>
+
+  <p style="text-align:center;font-size:13px;color:var(--color-text-secondary);margin-bottom:0.5rem;">
+  Designed by <strong>Naseem Saleh</strong>
+  </p>
+
+  <!-- ── Closing source ───────────────────────────────── -->
+  <div class="source-line">
+    Naseem Saleh · INST462 · Project 3: Interactive Data-Driven Narrative · Spring 2026<br>
+    · Dataset: <a href="https://github.com/lukeslp/accessibility-atlas-dataset/blob/main/webaim_million_2025.json" target="_blank">Lucas Steuber · GitHub Accessibility Atlas Dataset: WebAIM Million 2025</a> ·<br>
+    · Data: <a href="https://webaim.org/projects/million/" target="_blank">WebAIM Million Report from 2025</a> (Updated yearly) · 
+    1,000,000 home pages tested with automated WAVE analysis ·<br>
+    · <strong>This scrollytelling was designed using AI assistance. (Mostly Claude by Anthropic, with a little additional help from Gemini)</strong> · <!--IMPORTANT NOTE: Need to put on seperate spaces for readability ... also title project and name -->
+  </div>
+<!-- NOTE: near-end help with Gemini lk  for header bar viz decor rectangles and ...  -->
+</div><!-- /scroll-container -->
+
+<script>
+// ── IntersectionObserver: fade sections in/out, trigger chart animations ──
+// threshold 0.4 = panel must be 40% visible before animating (fires later in scroll)
+// animations re-trigger every time the panel enters view
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+
+      const id = entry.target.id;
+
+      if (id === 'viz2') {
+        // Destroy and re-init line chart so it draws itself in fresh each time
+        if (window._trendChart) { window._trendChart.destroy(); window._trendChart = null; }
+        if (typeof window._initTrendChart === 'function') window._initTrendChart();
+      }
+
+      if (id === 'viz3') {
+        window._viz3Animated = true;
+        // Reset to 0 first, then animate to target after a brief pause
+        document.querySelectorAll('#chartArea .bar-fill').forEach(fill => {
+          fill.style.transition = 'none';
+          fill.style.width = '0%';
+        });
+        setTimeout(() => {
+          document.querySelectorAll('#chartArea .bar-fill').forEach(fill => {
+            fill.style.transition = 'width 1.1s cubic-bezier(.4,0,.2,1)';
+            const target = fill.dataset.targetWidth;
+            if (target) fill.style.width = target;
+          });
+        }, 120);
+      }
+
+      if (id === 'viz4') {
+        window._viz4Animated = true;
+        ['fillAria','fillNoAria'].forEach(fillId => {
+          const fill = document.getElementById(fillId);
+          if (!fill) return;
+          fill.style.transition = 'none';
+          fill.style.width = '0%';
+        });
+        setTimeout(() => {
+          ['fillAria','fillNoAria'].forEach(fillId => {
+            const fill = document.getElementById(fillId);
+            if (!fill || !fill.dataset.targetWidth) return;
+            fill.style.transition = 'width 1.1s cubic-bezier(.4,0,.2,1)';
+            fill.style.width = fill.dataset.targetWidth;
+          });
+        }, 120);
+      }
+
+    } else {
+      if (entry.target.id !== 'hero') {
+        entry.target.classList.remove('in-view');
+      }
+    }
+  });
+}, { threshold: 0.4, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('#hero, .transition-slide, .viz-section').forEach(el => {
+  observer.observe(el);
+});
+ /* I'm inclined to say scrollytelly for some reason . TV hm.*/
+</script>
+</body>
+</html>
+
+<!-- file name orig INST462_SPRING_Scrolly_Project3_Interactive_Data_Driven_Narrative_Final_Naseem_Saleh -->
+
+<!-- Json file for data from lukesteuber 
+ https://github.com/lukeslp/accessibility-atlas-dataset/blob/main/webaim_million_2025.json
+ {
+  "source": "WebAIM Million Report",
+  "url": "https://webaim.org/projects/million/",
+  "year": 2025,
+  "methodology": "WAVE automated analysis of top 1,000,000 website home pages",
+  "summary": {
+    "total_pages_tested": 1000000,
+    "total_errors_detected": 50960288,
+    "average_errors_per_page": 51,
+    "pages_with_wcag_failures_pct": 94.8,
+    "error_density_pct": 4.1,
+    "average_page_elements": 1257
+  },
+  "common_failures": [
+    {
+      "type": "low_contrast_text",
+      "pages_affected_pct": 79.1,
+      "avg_instances_per_page": 29.6
+    },
+    {
+      "type": "missing_alt_text",
+      "pages_affected_pct": 55.5,
+      "avg_instances_per_page": 11
+    },
+    {
+      "type": "missing_form_labels",
+      "pages_affected_pct": 48.2,
+      "avg_instances_per_page": null
+    },
+    {
+      "type": "empty_links",
+      "pages_affected_pct": 45.4,
+      "avg_instances_per_page": 6.8
+    },
+    {
+      "type": "empty_buttons",
+      "pages_affected_pct": 29.6,
+      "avg_instances_per_page": null
+    },
+    {
+      "type": "missing_language",
+      "pages_affected_pct": 15.8,
+      "avg_instances_per_page": null
+    }
+  ],
+  "yearly_trends": {
+    "years": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "pages_with_failures_pct": [
+      97.8,
+      98.1,
+      97.4,
+      96.8,
+      96.3,
+      95.9,
+      94.8
+    ],
+    "avg_errors_per_page": [
+      59.6,
+      60.9,
+      51.4,
+      50.8,
+      56.8,
+      56.8,
+      51.0
+    ],
+    "avg_page_elements": [    ## Great I forgot / missed this.. might have been interesting to chart see compare amount of page element with 
+    ##other things to see if increase affects...  or avg errors ... Why didnt i use these ..
+       ##Overtime maybe avg elements vs avg elements with aria vs avg errors per page  . mbhlesselementssomehowforsmreasongbmoreerrors n  arialesselmntwhy
+      782,
+      887,
+      955,
+      1050,
+      1107,
+      1173,
+      1257
+    ],
+    "low_contrast_pct": [
+      85.3,
+      86.3,
+      83.9,
+      83.6,
+      83.6,
+      81.0,
+      79.1
+    ],
+    "missing_alt_text_pct": [
+      68.0,
+      66.0,
+      60.6,
+      56.1,
+      58.2,
+      54.5,
+      55.5
+    ],
+    "empty_links_pct": [
+      58.1,
+      59.9,
+      51.3,
+      49.1,
+      50.1,
+      48.6,
+      45.4
+    ],
+    "missing_form_labels_pct": [
+      52.8,
+      53.8,
+      54.4,
+      49.7,
+      45.9,
+      47.6,
+      48.2
+    ],
+    "empty_buttons_pct": [
+      25.0,
+      28.7,
+      26.9,
+      27.2,
+      28.6,
+      28.2,
+      29.6
+    ],
+    "missing_language_pct": [
+      33.1,
+      28.9,
+      28.9,
+      22.3,
+      18.6,
+      17.1,
+      15.8
+    ]
+  },
+  "category_performance": [
+    {
+      "category": "Government",
+      "avg_errors": 37.2,
+      "vs_baseline_pct": -27.0
+    },
+    {
+      "category": "Personal Finance",
+      "avg_errors": 37.7,
+      "vs_baseline_pct": -26.0
+    },
+    {
+      "category": "Non-Profit",
+      "avg_errors": 40.0,
+      "vs_baseline_pct": -21.6
+    },
+    {
+      "category": "Education",
+      "avg_errors": 40.7,
+      "vs_baseline_pct": -20.2
+    },
+    {
+      "category": "Reference",
+      "avg_errors": 41.8,
+      "vs_baseline_pct": -18.0
+    },
+    {
+      "category": "Law & Government",
+      "avg_errors": 42.3,
+      "vs_baseline_pct": -17.0
+    },
+    {
+      "category": "Health",
+      "avg_errors": 43.2,
+      "vs_baseline_pct": -15.3
+    },
+    {
+      "category": "News & Media",
+      "avg_errors": 50.1,
+      "vs_baseline_pct": -1.8
+    },
+    {
+      "category": "Business",
+      "avg_errors": 52.8,
+      "vs_baseline_pct": 3.5
+    },
+    {
+      "category": "Entertainment",
+      "avg_errors": 55.2,
+      "vs_baseline_pct": 8.2
+    },
+    {
+      "category": "Travel",
+      "avg_errors": 58.1,
+      "vs_baseline_pct": 13.9
+    },
+    {
+      "category": "Food & Drink",
+      "avg_errors": 59.2,
+      "vs_baseline_pct": 16.1
+    },
+    {
+      "category": "Automotive",
+      "avg_errors": 62.1,
+      "vs_baseline_pct": 21.8
+    },
+    {
+      "category": "Style & Fashion",
+      "avg_errors": 64.7,
+      "vs_baseline_pct": 26.9
+    },
+    {
+      "category": "Sports",
+      "avg_errors": 66.3,
+      "vs_baseline_pct": 30.1
+    },
+    {
+      "category": "Shopping",
+      "avg_errors": 71.2,
+      "vs_baseline_pct": 39.8
+    }
+  ],
+  "tld_performance": [
+    {
+      "tld": ".gov",
+      "avg_errors": 19.6,
+      "vs_baseline_pct": -61.6
+    },
+    {
+      "tld": ".edu",
+      "avg_errors": 23.6,
+      "vs_baseline_pct": -53.7
+    },
+    {
+      "tld": ".org",
+      "avg_errors": 36.0,
+      "vs_baseline_pct": -29.4
+    },
+    {
+      "tld": ".com",
+      "avg_errors": 49.8,
+      "vs_baseline_pct": -2.2
+    },
+    {
+      "tld": ".net",
+      "avg_errors": 50.2,
+      "vs_baseline_pct": -1.5
+    },
+    {
+      "tld": ".co",
+      "avg_errors": 53.3,
+      "vs_baseline_pct": 4.5
+    },
+    {
+      "tld": ".io",
+      "avg_errors": 55.7,
+      "vs_baseline_pct": 9.2
+    },
+    {
+      "tld": ".ru",
+      "avg_errors": 72.4,
+      "vs_baseline_pct": 42.1
+    },
+    {
+      "tld": ".ua",
+      "avg_errors": 89.1,
+      "vs_baseline_pct": 74.8
+    }
+  ],
+  "cms_performance": [
+    {
+      "cms": "Divi",
+      "avg_errors": 27.6,
+      "vs_baseline_pct": -45.9
+    },
+    {
+      "cms": "Squarespace",
+      "avg_errors": 30.3,
+      "vs_baseline_pct": -40.6
+    },
+    {
+      "cms": "WordPress",
+      "avg_errors": 50.0,
+      "vs_baseline_pct": -1.9
+    },
+    {
+      "cms": "Joomla",
+      "avg_errors": 57.2,
+      "vs_baseline_pct": 12.2
+    },
+    {
+      "cms": "Drupal",
+      "avg_errors": 60.3,
+      "vs_baseline_pct": 18.2
+    },
+    {
+      "cms": "Wix",
+      "avg_errors": 66.3,
+      "vs_baseline_pct": 30.0
+    },
+    {
+      "cms": "1C-Bitrix",
+      "avg_errors": 97.0,
+      "vs_baseline_pct": 90.3
+    }
+  ],
+  "framework_performance": [
+    {
+      "framework": "Next.js",
+      "avg_errors": 38.6,
+      "vs_baseline_pct": -24.2
+    },
+    {
+      "framework": "React",
+      "avg_errors": 42.4,
+      "vs_baseline_pct": -16.8
+    },
+    {
+      "framework": "Vue.js",
+      "avg_errors": 52.7,
+      "vs_baseline_pct": 3.3
+    },
+    {
+      "framework": "jQuery",
+      "avg_errors": 54.3,
+      "vs_baseline_pct": 6.5
+    },
+    {
+      "framework": "Angular",
+      "avg_errors": 70.7,
+      "vs_baseline_pct": 38.8
+    }
+  ],
+  "aria_usage": {
+    "pages_using_aria_pct": 79.4,
+    "avg_attributes_per_page": 105.5,
+    "errors_with_aria": 57,
+    "errors_without_aria": 27
+  },
+  "heading_analysis": {
+    "avg_headings_per_page": 25,
+    "multiple_h1_pct": 16.3,
+    "skipped_levels_pct": 39.0,
+    "no_headings_pct": 9.8
+  }
+}-->
