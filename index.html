@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Naseem Saleh - Data Viz Scrolly on WebAIM Accessibility</title>
+<title>Naseem Saleh - Data Viz Scrolly on WebAIM Accessibility</title> <!--Or just Accessibility on the Web or Internet ... now i wish i didnt do newyork style ugh  i should have thoughtaboutmyownstyle like wot  headlineshouldbepropertitlenotdataohwell-->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Georgia&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
   --border-radius-md:6px;
   --accent:#5c3db8;
   --accent-green:#0d7a5f;
-}
+} /* Maybe could have done green and purple for dataviz instead to fittheme?, but purple nice color and if it would show bad it might contradict embold .. or not idunno. Also not sure about colroblindnes and accessibilitty if used purple n green ..anyway..*/
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 
 /* ── Page layout ────────────────────────────────────── */
@@ -448,7 +448,10 @@ html,body{
 .bar-item-label.active-label{color:var(--color-text-primary,#1a1a18);font-weight:500}
 .bar-track{flex:1;height:28px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden;position:relative}
 .bar-fill{height:100%;border-radius:4px;transition:width .55s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;position:relative;overflow:hidden}
-.bar-fill-val{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;position:relative;z-index:2} /*NOTE: Changed from 12 to 14*/
+.bar-fill-val{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;position:relative;z-index:2;
+  background:rgba(0,0,0,0.40);
+  padding:1px 4px; /* Or 2px 6px */
+  border-radius:3px;} /*NOTE: Changed from 12 to 14*/ /*Important NOTE: Changed background of label so contrast better ... iknewitlookedbadbut... ididnthaveenoughsleepughcry.. spendingtoolongonthis.. */
 .bar-item-delta{font-size:13px;font-family:system-ui,sans-serif;width:80px;flex-shrink:0}
 
 /* ── Callout stat ── */
@@ -651,11 +654,11 @@ html,body{
           <div class="chrome-tab-stub"></div>
         </div>
       </div>
-      <h2 class="sr-only">95 out of 100 websites fail accessibility. Click to explore the top two failure types.</h2>
+      <!--<h2 class="sr-only">95 out of 100 websites fail accessibility. Click to explore the top two failure types.</h2> NOTE: Might not be good for access, confusing double h2 and different even-->
 
 <div class="panel">
   <p class="kicker">Web accessibility · 2025 · Top 1,000,000 homepages tested</p>
-  <h1 class="headline" id="headline">Only 5.2% of websites did not have any errors at all.</h1>
+  <h2 class="headline" id="headline">Only 5.2% of websites did not have any errors at all.</h2> <!-- Important NOTE: Had to change all these to H2 and the subsection in panel4 to H3 ...  dangitbot?   impurtant -->
   <p class="subhead" id="subhead">The top two errors tell us exactly how unequal access really is.</p>
 
   <div class="stats-row" id="statsRow">
@@ -1076,11 +1079,11 @@ grid.addEventListener('click',()=>{
           <div class="chrome-tab-stub"></div>
         </div>
       </div>
-      <h2 class="sr-only">Panel 2: Accessibility failure rates from 2019 to 2025. Select failure types to compare trends.</h2>
+      <!--<h2 class="sr-only">Panel 2: Accessibility failure rates from 2019 to 2025. Select failure types to compare trends.</h2>  NOTE: Not good for screen readers  dangitbot-->
 
 <div class="panel">
   <p class="kicker">Web accessibility trends · 2019–2025</p>
-  <h1 class="headline">Most failures are improving... But... barely.</h1>
+  <h2 class="headline">Most failures are improving... But... barely.</h2>
   <p class="subhead">...but just how much better? Select a failure type to explore its trend.</p>
 <!--origi in subhead Six years of data across 1 million homepages.
 Note change panel 1 color textfor middle l number back to red ... cuz consistency maybe i dunno -->
@@ -1386,7 +1389,7 @@ document.getElementById("resetBtn").addEventListener("click", resetAll);
   <!-- ── Transition 2→3 ───────────────────────────────── -->
   <div class="transition-slide" id="tr2">
     <i class="ti ti-building-store transition-icon" aria-hidden="true"></i>
-    <p class="transition-text">Not every website is created equally. Some industries' websites compared to others <em>have nearly twice these barriers.</em></p>
+    <p class="transition-text">Not every website is created equally. Some industries' websites compared to others <em>have nearly twice these barriers</em>.</p>
     <p class="transition-sub">Technology is becoming a necessity for everyday life. For some, that means ease of living... but for others...</p>
   </div>
 
@@ -1409,11 +1412,11 @@ document.getElementById("resetBtn").addEventListener("click", resetAll);
           <div class="chrome-tab-stub"></div>
         </div>
       </div>
-      <h2 class="sr-only">Panel 3: Average accessibility errors per homepage across 16 industries. A vertical line shows the overall average (51). Shopping has the most. Government has the fewest.</h2>
+      <!--<h2 class="sr-only">Panel 3: Average accessibility errors per homepage across 16 industries. A vertical line shows the overall average (51). Shopping has the most. Government has the fewest.</h2> NOTE: Not good for screen readers  dangitbot-->
 
 <div class="panel">
   <p class="kicker">16 industries · Average errors per homepage · 2025</p>
-  <h1 class="headline">With 51 errors on average, some industries have far to go... Some much farther.</h1>
+  <h2 class="headline">With 51 errors on average, some industries have far to go... Some much farther.</h2>
   <p class="subhead">...that means living gets difficult. Everyday essentials become a burden to access.
     <br><br>Click any bar to see details.
   </p>
@@ -1451,12 +1454,16 @@ document.getElementById("resetBtn").addEventListener("click", resetAll);
 (function(){
 const BASELINE=51;
 const ABOVE_COLOR='#C17B10';
-const BELOW_COLOR='#185FA5';
-const BASELINE_COLOR='#2e2c2a';
+const BELOW_COLOR='#1A6B8A'; // Note: #185FA5 #1A6B8A teal mightbe better matchpurplelayout
+const BASELINE_COLOR='#2e2c2a'; // NOTE: may need to thicken line ... or not ? never mind
 const MAX_ERRORS=80;
 // Gradients: amber for above-average, blue for below-average
-const ABOVE_GRADIENT='linear-gradient(90deg,#C17B10 0%,#E8A020 100%)';
-const BELOW_GRADIENT='linear-gradient(90deg,#185FA5 0%,#3B8FD4 100%)';
+const ABOVE_GRADIENT='linear-gradient(90deg,#E79B18 0%,#C17B10 100%)';   // NOTE: before switched direction, changed lighter side from #E8A020 .. too dark
+
+//const BELOW_SOLID='#1A6B8A'; // const BELOW_COLOR= { type: "solid", value: "#185FA5"} //I know this can be below color instead... but
+//const BELOW_GRADIENT='linear-gradient(90deg,#185FA5 0%,#3B8FD4 100%)';  NOTE: (this before changed colors meh) solid is better for grayscale derp or diagonal lines on the yellow / texture on one / both
+const BELOW_GRADIENT='linear-gradient(90deg,#185FA5 0%,#2E88D1 100%)'; // NOTE: Changed lighter side from #3B8FD4 to #4A8FA8 thenrealizedtoolightcontrst then darkr teal #1A7A9A and switch direction . just Darkened lighter orig color isntead slightly meh thoughilike the lookoftheteal hm
+// Note - backwards gradient for gray-scale
 
 const INDUSTRIES=[
   {name:'Shopping',errors:71.2,vs:39.8,icon:'ti-shopping-cart',
@@ -1579,7 +1586,7 @@ function render(){
 
     const bline=document.createElement('div');
     bline.className='baseline-line';
-    bline.style.cssText=`left:${bpct}%;background:${BASELINE_COLOR}`;
+    bline.style.cssText=`left:${bpct}%;background:${BASELINE_COLOR};width:2.1px`;
     track.appendChild(bline);
 
     const val=document.createElement('div');
@@ -1686,11 +1693,11 @@ document.getElementById('resetBtn2').addEventListener('click',resetSelection);
           <div class="chrome-tab active" id="tab4">The Paradox</div>
         </div>
       </div>
-      <h2 class="sr-only">Panel 4: Even when developers might try to fix accessibility with ARIA, pages can have more than twice the errors of pages that don't use it.</h2>
+      <!--<h2 class="sr-only">Panel 4: Even when developers might try to fix accessibility with ARIA, pages can have more than twice the errors of pages that don't use it.</h2>  #NOTE: Sr may not be good for accessibility , since diff heading and confusing-->
 
 <div class="panel">
   <p class="kicker"> With ARIA vs. Without · Accessibility Errors · 2025</p>
-  <h1 class="headline">Most pages use ARIA for accessibility... But still have twice as many errors</h1>
+  <h2 class="headline">Most pages use ARIA for accessibility... But still have twice as many errors</h2>
   <p class="subhead">...it was misused a lot more often than not.<br>
      ARIA is a set of tools developers use to make websites more accessible. 79.4 percent of pages use it. But these pages using ARIA have twice as many errors on average as pages without. </p>
  
@@ -1747,14 +1754,14 @@ document.getElementById('resetBtn2').addEventListener('click',resetSelection);
   <!-- Callout -->
   <div class="callout" id="ariaCallout">
     <div class="callout-val" id="calloutVal">2.1×</div>
-    <p class="callout-lbl" id="calloutLbl">more errors on pages using ARIA than pages that don't.</p>
-        <p class="hint">Pages using ARIA average 105.5 attributes per page.</p>
+    <p class="callout-lbl" id="calloutLbl">more errors on pages using ARIA (57) than pages that don't (27).</p>
+        <p class="hint" id="ariaAttrHint">Pages using ARIA average 105.5 attributes per page.</p>
   </div>
 
   <!-- Heading section -->
   <hr class="section-divider">
   <p class="section-label">Another thing misused · Common Heading Errors </p>
-  <h2 class="section-headline">Headings are important for screen reader navigation... But many pages use them wrong. </h2>
+  <h3 class="section-headline">Headings are important for screen reader navigation... But many pages use them wrong. </h3>
   <p class="section-sub">Screen readers use headings like a table of contents to navigate a page. If that navigation is broken... users can be misled.</p>
   <p class="hint">Click each stat to see what that looks like. (Avg: 25 headings per page)</p>
 <!-- NOTE: Chaos grid section added rectangles represent headers ... rectanglees the lang of rectangles-->
@@ -1948,8 +1955,10 @@ function setView(view) {
     deltaAria.innerHTML   = '<span style="color:#BD580A;font-weight:600">57 errors</span>'; /*NOTE: Changed from #C05A0A for accesssiblity */
     deltaNoAria.innerHTML = '<span style="color:#707070">27 errors</span>'; /*NOTE: Changed from #888 for accesssiblity */
 
-    calloutVal.textContent = '2.1×';
-    calloutLbl.textContent = 'more errors on pages using ARIA — the tool meant to help is correlated with more problems';
+    calloutVal.textContent = '2.1×'; /* NOTE: Forgot to change this text.... Also hint is/was visible for both with and without aria  was supposed to be only for with welp */
+    calloutLbl.textContent = 'more errors on pages using ARIA — the tool meant to help is correlated with more problems'; /*being misused or issues outside of ARIA are going unnoticed by developers*/ /*Maybe pages are more complex with aria... and/or layering it too much js layered?     /  "somehow comes with more errors instead"
+    Important Note: Correlation does not mean causation. */
+    document.getElementById('ariaAttrHint').style.display = 'block'; /* Hint when aria is selected */
 
     addCrackOverlay(fillAria, 57, MAX_ERRORS, 1);
     addCrackOverlay(fillNoAria, 27, MAX_ERRORS, 0.7);
@@ -1976,12 +1985,14 @@ function setView(view) {
     calloutVal.style.color = '#407C91';
     calloutVal.textContent = '27';
     calloutLbl.textContent = 'average errors on pages without ARIA — less than half the errors of pages that use it';
+    
+    document.getElementById('ariaAttrHint').style.display = 'none'; /* Hides hint when without aria is selected */
 
     addCrackOverlay(fillNoAria, 27, MAX_ERRORS, 1);
     addCrackOverlay(fillAria, 57, MAX_ERRORS, 0.7);
   }
 
-  if(view === 'aria') calloutVal.style.color = '#C05A0A';
+  if(view === 'aria') calloutVal.style.color = '#C05A0A'; //Note: Why is this out here ... ?
 }
 
 function showDemo(type) {
@@ -2179,6 +2190,14 @@ document.querySelectorAll('#hero, .transition-slide, .viz-section').forEach(el =
 </html>
 
 <!-- file name orig INST462_SPRING_Scrolly_Project3_Interactive_Data_Driven_Narrative_Final_Naseem_Saleh -->
+
+<!-- Man my case would have been (even) better made if the dataset was from 2026 updated... 
+ The color contrast errors grew and some other errors also, 
+ (and) so did the number of pages with errors in gen, 
+ and the website mentioned the original number of websites compliant with a and aa levels could have been even lower ? (without knowing or not?) 4.1 or smthng
+ Pages without errors WERE improving for six years, but 2026 they went up. 
+ That would have been a great point for my data vizes ugh oh well. 
+ My idea was that: There still needs more awareness of this issue. 2026 data would have made that point even better.. -->
 
 <!-- Json file for data from lukesteuber 
  https://github.com/lukeslp/accessibility-atlas-dataset/blob/main/webaim_million_2025.json
